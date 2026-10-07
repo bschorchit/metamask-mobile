@@ -629,6 +629,8 @@ export interface UsePerpsProOrderFormResult {
   // Eligibility (geo-block) modal
   isEligibilityModalVisible: boolean;
   closeEligibilityModal: () => void;
+  isAccountUnsupportedModalVisible: boolean;
+  closeAccountUnsupportedModal: () => void;
   // Fees tooltip
   selectedTooltip: PerpsTooltipContentKey | null;
   closeTooltip: () => void;
@@ -910,6 +912,9 @@ export const usePerpsProOrderForm = ({
     isEligibilityModalVisible,
     closeEligibilityModal,
     showEligibilityModal,
+    isAccountUnsupportedModalVisible,
+    checkAccountSupport,
+    closeAccountUnsupportedModal,
   } = usePerpsHomeActions({
     buttonLocation: PERPS_EVENT_VALUE.BUTTON_LOCATION.PERPS_ASSET_SCREEN,
   });
@@ -3280,6 +3285,10 @@ export const usePerpsProOrderForm = ({
           expectedScaleLadder,
         });
 
+        if (!(await checkAccountSupport())) {
+          return;
+        }
+
         // Haptics are non-critical feedback; a device haptics failure must not
         // prevent the already-validated controller request from being placed.
         playImpact(ImpactMoment.PrimaryCTA).catch(() => undefined);
@@ -3580,6 +3589,10 @@ export const usePerpsProOrderForm = ({
           }
           return;
         }
+      }
+
+      if (!(await checkAccountSupport())) {
+        return;
       }
 
       playImpact(ImpactMoment.PrimaryCTA).catch(() => undefined);
@@ -4726,6 +4739,7 @@ export const usePerpsProOrderForm = ({
     const expectedChaseProviderId = chaseProviderIdRef.current;
     const expectedNetwork = networkRef.current;
     const expectedLifecycleGeneration = lifecycleGenerationRef.current;
+    const submitOrder = handlePlaceOrderRef.current;
     if (isChaseSubmission && !isChaseLimitBannerVisible) {
       trackedChaseLimitEpisodeKeyRef.current = null;
     }
@@ -4784,7 +4798,7 @@ export const usePerpsProOrderForm = ({
           showEligibilityModal(PERPS_EVENT_VALUE.SOURCE.TRADE_ACTION);
           return;
         }
-        await handlePlaceOrderRef.current(
+        await submitOrder(
           expectedSubmissionState,
           expectedSelectedAddress,
           isChaseSubmission,
@@ -5030,6 +5044,8 @@ export const usePerpsProOrderForm = ({
     // Eligibility (geo-block) modal
     isEligibilityModalVisible,
     closeEligibilityModal,
+    isAccountUnsupportedModalVisible,
+    closeAccountUnsupportedModal,
     // Fees tooltip
     selectedTooltip,
     closeTooltip: () => setSelectedTooltip(null),
