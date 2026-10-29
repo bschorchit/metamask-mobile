@@ -25,6 +25,7 @@ import {
   type OrderBookLevel,
   type OrderResult,
   type Position,
+  type PerpsControllerState,
 } from '@metamask/perps-controller';
 import Engine from '../../../../../core/Engine';
 import { updateBgState } from '../../../../../core/redux/slices/engine';
@@ -100,6 +101,22 @@ const eligibleOverrides = {
       },
     },
   },
+};
+
+const setMockPerpsControllerState = (state: PerpsControllerState) => {
+  const engineState: unknown = Reflect.get(Engine, 'state');
+  if (
+    engineState !== undefined &&
+    (typeof engineState !== 'object' ||
+      engineState === null ||
+      Array.isArray(engineState))
+  ) {
+    throw new Error('Expected the component-view Engine mock to expose state');
+  }
+  Reflect.set(Engine, 'state', {
+    ...(engineState ?? {}),
+    PerpsController: state,
+  });
 };
 
 const marketDetailsRoute: PerpsExtraRoute = {
@@ -461,23 +478,14 @@ describe('PerpsOrderView', () => {
     await waitFor(() => expect(getAccountSupport).toHaveBeenCalledTimes(2));
     const currentPerpsState =
       store.getState().engine.backgroundState.PerpsController;
-    const engineWithState = Engine as unknown as {
-      state: Record<string, unknown>;
-    };
     act(() => {
-      engineWithState.state = {
-        ...engineWithState.state,
-        PerpsController: {
-          ...currentPerpsState,
-          isTestnet: true,
-        },
-      };
+      setMockPerpsControllerState({
+        ...currentPerpsState,
+        isTestnet: true,
+      });
       store.dispatch(updateBgState({ key: 'PerpsController' }));
     });
-    engineWithState.state = {
-      ...engineWithState.state,
-      PerpsController: currentPerpsState,
-    };
+    setMockPerpsControllerState(currentPerpsState);
     await act(async () => {
       resolveAccountSupport({
         isSupported: false,
