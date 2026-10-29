@@ -23,6 +23,7 @@ export type PerpsInlineInfoContentKey =
   | 'liquidation_price'
   | 'cross_liquidation_estimate_unavailable'
   | 'liquidation_distance'
+  | 'account_not_supported'
   | 'account_ratio'
   | 'maintenance_margin'
   | 'account_leverage'
