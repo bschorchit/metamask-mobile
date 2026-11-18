@@ -54,6 +54,14 @@ at the client boundary before being returned to a caller.
 Submission responses also require a non-blank signature, even when `success`
 is omitted; `success: false` still rejects the submission.
 
+Step 2.2 adds `PackPartnerDataService`, extending `BaseDataService`, and registers
+it in Engine with its messenger and query keys. It owns read caching, coalescing,
+bounded read retries and collection-only persistence through `StorageService`.
+The catalogue stays transient; a complete owned collection is loaded in pages of
+500 and its last successful snapshot is restored for offline display. Reset clears
+snapshots and drains writes before service messengers are destroyed.
+See [read-service policies](services/data/README.md).
+
 The controller remains the empty initialization shell. Transaction orchestration
 and its journal arrive in step 2.3; React hooks and balance reads arrive in 2.4.
 The homepage entry and placeholder screen are unchanged.
@@ -131,9 +139,14 @@ services. Preserve the initialization branch's public entry points.
 
 Client, schema and amount tests exercise transport and pure validation with HTTP
 mocked. There is no new screen behavior requiring component-view or device tests.
+Service integration tests run the real HTTP validation, `BaseDataService`,
+query bridge and `StorageService` with HTTP and disk I/O substituted. They cover
+cache policy, full pagination, offline restart and reset races. Engine tests cover
+registration and storage cleanup ordering. They do not prove native disk durability.
 
 ```sh
 yarn jest app/components/UI/Collectibles/services app/components/UI/Collectibles/providers --runInBand --coverage=false
+yarn jest -c jest.config.integration.js app/components/UI/Collectibles/services --runInBand --coverage=false
 ```
 
 ### Test conventions
