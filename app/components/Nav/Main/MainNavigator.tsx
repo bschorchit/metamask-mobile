@@ -201,6 +201,7 @@ import {
 import { PredictRoot, selectPredictAvailability } from '../../UI/PredictNext';
 import { selectCollectiblesEnabled } from '../../UI/Collectibles/selectors/featureFlags';
 import { CollectiblesLayout } from '../../UI/Collectibles/routes/CollectiblesLayout';
+import { BuySheet as CollectiblesBuySheet } from '../../UI/Collectibles/routes/BuySheet';
 import { collectiblesRoutes } from '../../UI/Collectibles/routeNames';
 import { TrendingQuickBuySheetProvider } from '../../UI/Trending/contexts';
 import { QuickBuySheetHostProvider } from '../../UI/QuickBuy/QuickBuySheetHost';
@@ -1508,6 +1509,13 @@ const MainNavigator = () => {
           name={collectiblesRoutes.root}
           component={CollectiblesLayout}
           options={slideFromRightNativeOptions}
+        />
+      )}
+      {isCollectiblesEnabled && (
+        <NativeStack.Screen
+          name={collectiblesRoutes.buySheet}
+          component={CollectiblesBuySheet}
+          options={transparentModalStackOptions}
         />
       )}
       {(isMarketInsightsEnabled || isMarketInsightsPerpsEnabled) && (

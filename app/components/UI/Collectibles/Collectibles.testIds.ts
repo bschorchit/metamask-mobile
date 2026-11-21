@@ -7,4 +7,7 @@ export const collectiblesTestIds = {
   tradeMenuItem: 'collectibles-trade-menu-item',
   tile: (code: string) => `collectibles-pack-tile-${code}`,
   flame: (code: string) => `collectibles-pack-tile-flame-${code}`,
+  buyButton: (code: string) => `collectibles-pack-tile-buy-${code}`,
+  buySheet: 'collectibles-buy-sheet',
+  buySheetClose: 'collectibles-buy-sheet-close',
 } as const;

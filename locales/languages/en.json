@@ -5472,6 +5472,10 @@
         "one": "{{formattedCount}} open, trending",
         "other": "{{formattedCount}} opens, trending"
       }
+    },
+    "buy_sheet": {
+      "placeholder": "Buying packs is coming soon.",
+      "open_hint": "Opens the buy sheet for {{name}}"
     }
   },
   "collectible": {
