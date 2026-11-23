@@ -496,6 +496,12 @@ const SPACING_CASES: SpacingCase[] = [
     messages: [ARBITRARY, ARBITRARY],
   },
   {
+    name: 'flags arbitrary spacing in a tw.style template literal',
+    file: SPACING_COMPONENT_FILE,
+    code: 'const a = tw.style(`pt-[22px]`);\nconst b = tw.style(`px-4 ${active ? "mb-2" : ""} mt-[3px]`);\n',
+    messages: [ARBITRARY, ARBITRARY],
+  },
+  {
     name: 'flags arbitrary spacing behind a variant or important modifier',
     file: SPACING_COMPONENT_FILE,
     code: 'const a = <Box twClassName="dark:p-[3px]" />;\nconst b = <Box twClassName="!-mt-[2px]" />;\n',

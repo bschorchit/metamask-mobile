@@ -100,6 +100,10 @@ const spacingGridSelectors = [
     message: ARBITRARY_SPACING_MESSAGE,
   },
   {
+    selector: `CallExpression[callee.object.name='tw'] TemplateElement[value.raw=${ARBITRARY_SPACING_CLASS}]`,
+    message: ARBITRARY_SPACING_MESSAGE,
+  },
+  {
     selector: `TaggedTemplateExpression[tag.name='tw'] TemplateElement[value.raw=${ARBITRARY_SPACING_CLASS}]`,
     message: ARBITRARY_SPACING_MESSAGE,
   },
