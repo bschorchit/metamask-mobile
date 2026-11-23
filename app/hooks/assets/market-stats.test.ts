@@ -1,7 +1,7 @@
 import { createElement, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { renderHook } from '@testing-library/react-native';
+import { renderHook, waitFor } from '@testing-library/react-native';
 import Engine from '../../core/Engine';
 import {
   liveHoldingFiat,
@@ -25,7 +25,7 @@ jest.mock('../../core/Engine', () => ({
   controllerMessenger: {
     subscribe: jest.fn(),
     unsubscribe: jest.fn(),
-    call: jest.fn(() => Promise.resolve()),
+    call: jest.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -134,7 +134,7 @@ describe('useMarketStatsSubscription', () => {
 
 // subscribe returns void. Calling its return value crashes the list on unmount.
 describe('useMarketStats', () => {
-  it('unsubscribes with the handler passed to subscribe', () => {
+  it('unsubscribes with the handler passed to subscribe', async () => {
     AppState.currentState = 'active';
     const subscribe = Engine.controllerMessenger.subscribe as jest.Mock;
     const unsubscribe = Engine.controllerMessenger.unsubscribe as jest.Mock;
@@ -151,9 +151,12 @@ describe('useMarketStats', () => {
 
     unmount();
 
-    expect(unsubscribe).toHaveBeenCalledWith(
-      'MarketStatsService:pricesUpdated',
-      pricesHandler,
-    );
+    // subscribeLiveQuotes attaches the unsubscribe on a microtask.
+    await waitFor(() => {
+      expect(unsubscribe).toHaveBeenCalledWith(
+        'MarketStatsService:pricesUpdated',
+        pricesHandler,
+      );
+    });
   });
 });

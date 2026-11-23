@@ -481,7 +481,7 @@ export const TokenListItem = React.memo(
             currency: currentCurrency,
           })
         : undefined;
-    const fiatBalance = liveFiatBalance || asset.balanceFiat || '—';
+    const fiatBalance = liveFiatBalance ?? (asset.balanceFiat || '—');
     const tokenBalance = `${asset.balance} ${asset.symbol}`;
 
     const isFiatBalanceLoading =
