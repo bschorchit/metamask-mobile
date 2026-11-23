@@ -20,12 +20,21 @@ const componentViewPlugin = require('./eslint/component-view-plugin') as {
   rules: Record<string, Rule.RuleModule>;
 };
 
+const designSystemPlugin = require('./eslint/design-system-plugin') as {
+  meta: { name: string; version: string };
+  rules: Record<string, Rule.RuleModule>;
+};
+
 const RULE = 'no-restricted-syntax';
 const PLUGIN_RULES = [
   'component-view/no-restricted-syntax',
   'component-view/no-bare-query-timeout',
   'component-view/no-clear-all-mocks-without-reset',
 ] as const;
+const SPACING_RULE = 'design-system/spacing-grid';
+const SPACING_FILE = 'app/components/UI/ReviewModal/styles.ts';
+const SPACING_COMPONENT_FILE =
+  'app/components/UI/Bridge/components/TokenWarningModal/index.tsx';
 const REPO_ROOT = path.join(__dirname, '..');
 const VIEW_TEST_FILE =
   'app/components/UI/Perps/Views/PerpsTransactionsView/PerpsPositionTransactionView.view.test.tsx';
@@ -172,7 +181,7 @@ const { ESLint } = require('eslint');
 const fs = require('node:fs');
 const path = require('node:path');
 const files = ${JSON.stringify(unique)};
-const pluginRules = ${JSON.stringify(PLUGIN_RULES)};
+const pluginRules = ${JSON.stringify([...PLUGIN_RULES, SPACING_RULE])};
 const cwd = ${JSON.stringify(REPO_ROOT)};
 const outPath = ${JSON.stringify(outPath)};
 const eslint = new ESLint({ cwd });
@@ -212,6 +221,11 @@ const { syntax: resolvedRules, plugin: resolvedPluginRules } = loadResolvedRules
   [
     ...FENCE_CASES.map((item) => item.file),
     'app/core/Engine/Engine.ts',
+    SPACING_FILE,
+    SPACING_COMPONENT_FILE,
+    'app/components/UI/ReviewModal/index.test.tsx',
+    'app/component-library/components/Texts/Text/Text.stories.tsx',
+    'tests/component-view/platform.ts',
   ],
 );
 const linter = new Linter({ cwd: REPO_ROOT });
@@ -425,5 +439,132 @@ describe('component-view flake fences', () => {
       return;
     }
     expect(messages.some((item) => item.includes(message))).toBe(true);
+  });
+});
+
+const OFF_GRID = 'Spacing is off the 4px grid';
+const ARBITRARY = 'Arbitrary spacing values';
+
+interface SpacingCase {
+  name: string;
+  file: string;
+  code: string;
+  messages: string[];
+}
+
+const SPACING_CASES: SpacingCase[] = [
+  {
+    name: 'flags off-grid spacing numbers',
+    file: SPACING_FILE,
+    code: 'const s = { padding: 15, marginTop: 6, gap: 1.5, columnGap: 98 };\n',
+    messages: [OFF_GRID, OFF_GRID, OFF_GRID, OFF_GRID],
+  },
+  {
+    name: 'flags a negative off-grid margin',
+    file: SPACING_FILE,
+    code: 'const s = { marginLeft: -10 };\n',
+    messages: [OFF_GRID],
+  },
+  {
+    name: 'flags logical spacing keys',
+    file: SPACING_FILE,
+    code: 'const s = { paddingInline: 10, marginBlockEnd: 3 };\n',
+    messages: [OFF_GRID, OFF_GRID],
+  },
+  {
+    name: 'allows spacing on the 4px grid',
+    file: SPACING_FILE,
+    code: 'const s = { padding: 16, marginTop: 0, rowGap: 104, marginLeft: -8, paddingBottom: 100 };\n',
+    messages: [],
+  },
+  {
+    name: 'ignores keys that are not spacing',
+    file: SPACING_FILE,
+    code: 'const s = { width: 15, borderRadius: 6, top: 3, paddingSize: 5 };\n',
+    messages: [],
+  },
+  {
+    name: 'flags arbitrary spacing in twClassName and className',
+    file: SPACING_COMPONENT_FILE,
+    code: 'const a = <Box twClassName="pt-[22px] mx-4" />;\nconst b = <View className={`mb-[10px] ${extra}`} />;\n',
+    messages: [ARBITRARY, ARBITRARY],
+  },
+  {
+    name: 'flags arbitrary spacing in tw.style and tw templates',
+    file: SPACING_COMPONENT_FILE,
+    code: "const a = tw.style('mt-[3px] p-2');\nconst b = tw`gap-x-[14px]`;\n",
+    messages: [ARBITRARY, ARBITRARY],
+  },
+  {
+    name: 'flags arbitrary spacing behind a variant or important modifier',
+    file: SPACING_COMPONENT_FILE,
+    code: 'const a = <Box twClassName="dark:p-[3px]" />;\nconst b = <Box twClassName="!-mt-[2px]" />;\n',
+    messages: [ARBITRARY, ARBITRARY],
+  },
+  {
+    name: 'allows scale classes, calc() and interpolated values',
+    file: SPACING_COMPONENT_FILE,
+    code: 'const a = <Box twClassName="p-4 mt-0.5 h-[15px]" />;\nconst b = <Box className="pb-[calc(16px+env(safe-area-inset-bottom))]" />;\nconst c = <Box twClassName={`mb-[${inset}px]`} />;\n',
+    messages: [],
+  },
+];
+
+const lintSpacing = (file: string, code: string): string[] => {
+  const rule = resolvedPluginRules[file]?.[SPACING_RULE];
+  if (rule == null) {
+    throw new Error(`No ${SPACING_RULE} config was resolved for ${file}`);
+  }
+  return linter
+    .verify(
+      code,
+      {
+        files: ['**/*.{js,jsx,ts,tsx}'],
+        languageOptions: {
+          ecmaVersion: 2022,
+          sourceType: 'module',
+          parserOptions: { ecmaFeatures: { jsx: true } },
+        },
+        plugins: { 'design-system': designSystemPlugin },
+        rules: { [SPACING_RULE]: rule },
+      },
+      { filename: path.join(REPO_ROOT, file) },
+    )
+    .filter((message) => message.ruleId === SPACING_RULE)
+    .map((message) => message.message);
+};
+
+describe('design-system spacing grid', () => {
+  it('applies to app source as an error', () => {
+    const rule = resolvedPluginRules[SPACING_FILE]?.[SPACING_RULE];
+
+    expect(Array.isArray(rule) ? rule[0] : rule).toBe(2);
+  });
+
+  it.each([
+    'app/components/UI/ReviewModal/index.test.tsx',
+    'app/component-library/components/Texts/Text/Text.stories.tsx',
+    'tests/component-view/platform.ts',
+  ])('does not apply to %s', (file) => {
+    const rule = resolvedPluginRules[file]?.[SPACING_RULE] ?? null;
+
+    expect(rule).toBeNull();
+  });
+
+  it('keeps the base no-restricted-syntax bans on app source', () => {
+    const selectors = selectorsOf(resolvedRules[SPACING_FILE]);
+
+    expect(selectors).toStrictEqual(['WithStatement', 'SequenceExpression']);
+  });
+
+  it.each(SPACING_CASES)('$name', ({ file, code, messages }) => {
+    const result = lintSpacing(file, code);
+
+    expect(
+      result.map(
+        (item) =>
+          [OFF_GRID, ARBITRARY].find((prefix) => item.startsWith(prefix)) ??
+          item,
+      ),
+    ).toStrictEqual(messages);
   });
 });
