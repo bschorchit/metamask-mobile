@@ -1370,11 +1370,11 @@ describe('PredictApiReadClient', () => {
         );
 
         const pending = client.commitWithdraw(venueId, previewId);
-        const rejection = await Promise.resolve(
-          expect(pending).rejects.toMatchObject({
-            name: 'AbortError',
-          }),
-        );
+        // Captured, not awaited: the deadline timer below is what rejects it.
+        // eslint-disable-next-line jest/valid-expect -- awaited below
+        const rejection = expect(pending).rejects.toMatchObject({
+          name: 'AbortError',
+        });
         await jest.advanceTimersByTimeAsync(0);
 
         expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -1401,11 +1401,11 @@ describe('PredictApiReadClient', () => {
         );
 
         const pending = client.observeWithdraw(venueId, previewId);
-        const rejection = await Promise.resolve(
-          expect(pending).rejects.toMatchObject({
-            name: 'AbortError',
-          }),
-        );
+        // Captured, not awaited: the deadline timer below is what rejects it.
+        // eslint-disable-next-line jest/valid-expect -- awaited below
+        const rejection = expect(pending).rejects.toMatchObject({
+          name: 'AbortError',
+        });
         await jest.advanceTimersByTimeAsync(0);
 
         expect(requestSignal?.aborted).toBe(false);
