@@ -93,9 +93,7 @@ export function shouldNavigateConfirmationModal(
     // Valid transaction types use modal
     if (
       transactionMetadata &&
-      REDESIGNED_TRANSACTION_TYPES.includes(
-        transactionMetadata.type as TransactionType,
-      )
+      REDESIGNED_TRANSACTION_TYPES.includes(transactionMetadata.type)
     ) {
       return true;
     }
