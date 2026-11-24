@@ -192,9 +192,7 @@ describe('PredictFundingService withdrawal transport', () => {
       PREVIEW_ID,
       { signal: caller.signal },
     );
-    // Captured, not awaited: `caller.abort()` below is what rejects it.
-    // eslint-disable-next-line jest/valid-expect -- awaited below
-    const cancelled = expect(second).rejects.toMatchObject({
+    const cancelled = await expect(second).rejects.toMatchObject({
       name: 'AbortError',
     });
     await tokenRequested.promise;
