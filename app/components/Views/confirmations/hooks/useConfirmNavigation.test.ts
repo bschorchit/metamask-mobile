@@ -37,6 +37,16 @@ jest.mock('../../../../selectors/transactionController', () => ({
 
 const STACK_MOCK = 'SomeStack';
 const TRANSACTION_ID_MOCK = '123-456';
+const NAVIGATOR_KEY_MOCK = 'navigator-key';
+
+function resolveDispatchedAction({ routeNames }: { routeNames: string[] }) {
+  const thunk = mockDispatch.mock.calls[0]?.[0] as (state: {
+    key: string;
+    routeNames: string[];
+  }) => unknown;
+
+  return thunk({ key: NAVIGATOR_KEY_MOCK, routeNames });
+}
 
 function runHook({ transactions }: { transactions?: TransactionMeta[] } = {}) {
   jest.mocked(selectTransactions).mockReturnValue(transactions ?? []);
@@ -89,13 +99,31 @@ describe('useConfirmNavigation', () => {
       replace: true,
     });
 
-    expect(mockDispatch).toHaveBeenCalledWith(
+    expect(resolveDispatchedAction({ routeNames: [STACK_MOCK] })).toEqual({
+      ...StackActions.replace(STACK_MOCK, {
+        screen: Routes.FULL_SCREEN_CONFIRMATIONS.REDESIGNED_CONFIRMATIONS,
+        params: { loader: ConfirmationLoader.CustomAmount },
+      }),
+      target: NAVIGATOR_KEY_MOCK,
+    });
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('leaves the replace untargeted when the calling navigator does not own the route', () => {
+    const { navigateToConfirmation } = runHook().result.current;
+
+    navigateToConfirmation({
+      stack: STACK_MOCK,
+      loader: ConfirmationLoader.CustomAmount,
+      replace: true,
+    });
+
+    expect(resolveDispatchedAction({ routeNames: ['OtherRoute'] })).toEqual(
       StackActions.replace(STACK_MOCK, {
         screen: Routes.FULL_SCREEN_CONFIRMATIONS.REDESIGNED_CONFIRMATIONS,
         params: { loader: ConfirmationLoader.CustomAmount },
       }),
     );
-    expect(mockNavigate).not.toHaveBeenCalled();
   });
 
   it('replaces confirmation route without stack when replace is enabled', () => {
@@ -106,14 +134,19 @@ describe('useConfirmNavigation', () => {
       replace: true,
     });
 
-    expect(mockDispatch).toHaveBeenCalledWith(
-      StackActions.replace(
+    expect(
+      resolveDispatchedAction({
+        routeNames: [Routes.FULL_SCREEN_CONFIRMATIONS.REDESIGNED_CONFIRMATIONS],
+      }),
+    ).toEqual({
+      ...StackActions.replace(
         Routes.FULL_SCREEN_CONFIRMATIONS.REDESIGNED_CONFIRMATIONS,
         {
           loader: ConfirmationLoader.CustomAmount,
         },
       ),
-    );
+      target: NAVIGATOR_KEY_MOCK,
+    });
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 
@@ -167,13 +200,18 @@ describe('useConfirmNavigation', () => {
       replace: true,
     });
 
-    expect(mockDispatch).toHaveBeenCalledWith(
-      StackActions.replace(Routes.CONFIRMATION_REQUEST_MODAL, {
+    expect(
+      resolveDispatchedAction({
+        routeNames: [Routes.CONFIRMATION_REQUEST_MODAL],
+      }),
+    ).toEqual({
+      ...StackActions.replace(Routes.CONFIRMATION_REQUEST_MODAL, {
         amount: '5',
         forceBottomSheet: true,
         loader: ConfirmationLoader.CustomAmount,
       }),
-    );
+      target: NAVIGATOR_KEY_MOCK,
+    });
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 
