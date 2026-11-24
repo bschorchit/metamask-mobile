@@ -313,6 +313,7 @@ const MixedWatchlistSection = forwardRef<
     canRefresh,
     canFetchSuggestions,
     tokenMembershipAssetIds,
+    perpsMembershipSymbols,
     tokenCount,
     perpsCount,
     isOrderReady,
@@ -374,10 +375,10 @@ const MixedWatchlistSection = forwardRef<
         watchlistedTokenSymbols: tokens.items.map((item) =>
           String(item.token.symbol),
         ),
-        watchlistedPerpSymbols: perps.items.map((item) => item.symbol),
+        watchlistedPerpSymbols: perpsMembershipSymbols,
       }),
     [
-      perps.items,
+      perpsMembershipSymbols,
       remainingSuggestedCount,
       suggestedPerps,
       suggestedPool,
