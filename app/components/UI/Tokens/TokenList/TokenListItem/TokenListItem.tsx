@@ -54,7 +54,8 @@ import { formatWithThreshold } from '../../../../../util/assets';
 import { getLocaleLanguageCode } from '../../../../hooks/useFormatters';
 import {
   liveHoldingFiat,
-  type LiveQuote,
+  readLiveQuotes,
+  useMarketStats,
 } from '../../../../../hooks/assets/market-stats';
 import { safeToChecksumAddress } from '../../../../../util/address';
 import { getAssetTestId } from '../../../../../../tests/selectors/Wallet/WalletView.selectors';
@@ -162,11 +163,6 @@ interface TokenListItemProps {
    * (no token price / 24h change). Used by the Money Hub.
    */
   hideSecondaryPriceRow?: boolean;
-  /**
-   * Streamed quote for this asset. Absent until the first tick, and while the
-   * list is not streaming. The object identity is stable until this asset changes.
-   */
-  liveQuote?: LiveQuote;
 }
 
 export const TokenListItem = React.memo(
@@ -181,12 +177,20 @@ export const TokenListItem = React.memo(
     tokenPositionInList,
     tokensInList,
     hideSecondaryPriceRow = false,
-    liveQuote,
   }: TokenListItemProps) => {
     const navigation = useNavigation<AppNavigationProp>();
     const queryClient = useQueryClient();
     const { colors } = useTheme();
     const styles = createStyles(colors);
+
+    // This row reads only its own quote, so a tick for another asset leaves it
+    // alone. Absent until the first tick, and while the app is not streaming.
+    const selectLiveQuote = useCallback(
+      (quotes: Parameters<typeof readLiveQuotes>[0]) =>
+        readLiveQuotes(quotes, [assetKey.address]),
+      [assetKey.address],
+    );
+    const [liveQuote] = useMarketStats(selectLiveQuote);
 
     const tokenMarketData = useSelector(selectTokenMarketData);
     const currencyRates = useSelector(selectCurrencyRates);

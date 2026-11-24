@@ -1,12 +1,13 @@
 import { createElement, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { renderHook, waitFor } from '@testing-library/react-native';
+import { act, renderHook, waitFor } from '@testing-library/react-native';
 import Engine from '../../core/Engine';
 import {
   liveHoldingFiat,
   shouldStreamLivePrices,
   useMarketStats,
+  useMarketStatsListener,
   useMarketStatsSubscription,
 } from './market-stats';
 
@@ -65,11 +66,19 @@ describe('liveHoldingFiat', () => {
 });
 
 describe('useMarketStatsSubscription', () => {
-  it('subscribes the asset on the details page', async () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
     AppState.currentState = 'active';
+    (Engine.controllerMessenger.call as jest.Mock).mockClear();
+    (Engine.controllerMessenger.call as jest.Mock).mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('subscribes the asset on the details page after the debounce', () => {
     const call = Engine.controllerMessenger.call as jest.Mock;
-    call.mockClear();
-    call.mockResolvedValue(undefined);
 
     renderHook(() =>
       useMarketStatsSubscription([
@@ -77,6 +86,12 @@ describe('useMarketStatsSubscription', () => {
         'eip155:137/slip44:966',
       ]),
     );
+
+    expect(call).not.toHaveBeenCalled();
+
+    act(() => {
+      jest.advanceTimersByTime(500);
+    });
 
     expect(call).toHaveBeenCalledWith(
       'MarketStatsService:subscribe',
@@ -88,15 +103,29 @@ describe('useMarketStatsSubscription', () => {
     );
   });
 
-  it('releases the ui caller when the page closes', async () => {
-    AppState.currentState = 'active';
+  it('does not subscribe when the page closes before the debounce', () => {
     const call = Engine.controllerMessenger.call as jest.Mock;
-    call.mockClear();
-    call.mockResolvedValue(undefined);
 
     const { unmount } = renderHook(() =>
       useMarketStatsSubscription(['eip155:1/slip44:60']),
     );
+    unmount();
+    act(() => {
+      jest.advanceTimersByTime(500);
+    });
+
+    expect(call).not.toHaveBeenCalled();
+  });
+
+  it('releases the ui caller when the page closes after the subscribe', () => {
+    const call = Engine.controllerMessenger.call as jest.Mock;
+
+    const { unmount } = renderHook(() =>
+      useMarketStatsSubscription(['eip155:1/slip44:60']),
+    );
+    act(() => {
+      jest.advanceTimersByTime(500);
+    });
     unmount();
 
     expect(call).toHaveBeenLastCalledWith(
@@ -106,24 +135,22 @@ describe('useMarketStatsSubscription', () => {
     );
   });
 
-  it('replaces the ui list when the assets change', async () => {
-    AppState.currentState = 'active';
+  it('replaces the ui list when the assets change', () => {
     const call = Engine.controllerMessenger.call as jest.Mock;
-    call.mockClear();
-    call.mockResolvedValue(undefined);
 
     const { rerender } = renderHook(
       ({ assetIds }: { assetIds: readonly string[] }) =>
         useMarketStatsSubscription(assetIds),
       { initialProps: { assetIds: ['eip155:1/slip44:60'] } },
     );
+    act(() => {
+      jest.advanceTimersByTime(500);
+    });
     rerender({ assetIds: ['eip155:137/slip44:966'] });
+    act(() => {
+      jest.advanceTimersByTime(500);
+    });
 
-    expect(
-      call.mock.calls.every(
-        ([method]) => method === 'MarketStatsService:subscribe',
-      ),
-    ).toBe(true);
     expect(call).toHaveBeenLastCalledWith(
       'MarketStatsService:subscribe',
       [{ assetId: 'eip155:137/slip44:966', currency: 'usd' }],
@@ -133,7 +160,7 @@ describe('useMarketStatsSubscription', () => {
 });
 
 // subscribe returns void. Calling its return value crashes the list on unmount.
-describe('useMarketStats', () => {
+describe('useMarketStatsListener', () => {
   it('unsubscribes with the handler passed to subscribe', async () => {
     AppState.currentState = 'active';
     const subscribe = Engine.controllerMessenger.subscribe as jest.Mock;
@@ -141,7 +168,7 @@ describe('useMarketStats', () => {
     subscribe.mockClear();
     unsubscribe.mockClear();
 
-    const { unmount } = renderHook(() => useMarketStats(), {
+    const { unmount } = renderHook(() => useMarketStatsListener(), {
       wrapper: QueryWrapper,
     });
 
@@ -158,5 +185,18 @@ describe('useMarketStats', () => {
         pricesHandler,
       );
     });
+  });
+});
+
+describe('useMarketStats', () => {
+  it('adds no listener of its own', () => {
+    AppState.currentState = 'active';
+    const subscribe = Engine.controllerMessenger.subscribe as jest.Mock;
+    subscribe.mockClear();
+
+    renderHook(() => useMarketStats(), { wrapper: QueryWrapper });
+    renderHook(() => useMarketStats(), { wrapper: QueryWrapper });
+
+    expect(subscribe).not.toHaveBeenCalled();
   });
 });

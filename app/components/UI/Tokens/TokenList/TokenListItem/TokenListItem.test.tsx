@@ -73,6 +73,13 @@ jest.mock('@tanstack/react-query', () => {
   };
 });
 
+// The row reads its own streamed quote. Tests set it through `mockUseMarketStats`.
+const mockUseMarketStats = jest.fn();
+jest.mock('../../../../../hooks/assets/market-stats', () => ({
+  ...jest.requireActual('../../../../../hooks/assets/market-stats'),
+  useMarketStats: () => mockUseMarketStats(),
+}));
+
 // TokenListSecurityBadge uses TanStack Query; omit from these TokenList-focused tests.
 jest.mock(
   '../../components/TokenListSecurityBadge/TokenListSecurityBadge',
@@ -266,6 +273,10 @@ jest.mock('react-redux', () => ({
 }));
 
 describe('TokenListItem - Component Rendering Tests for Coverage', () => {
+  beforeEach(() => {
+    mockUseMarketStats.mockReturnValue([]);
+  });
+
   const mockUseSelector = useSelector as jest.MockedFunction<
     typeof useSelector
   >;
@@ -450,6 +461,9 @@ describe('TokenListItem - Component Rendering Tests for Coverage', () => {
     });
 
     it('replaces the polled price, percent, and fiat balance with the streamed quote', () => {
+      mockUseMarketStats.mockReturnValue([
+        { price: 10, pricePercentChange1d: -1.5 },
+      ]);
       prepareMocks({
         asset: { ...defaultAsset, balanceAmount: 4 },
       });
@@ -466,7 +480,6 @@ describe('TokenListItem - Component Rendering Tests for Coverage', () => {
           showRemoveMenu={jest.fn()}
           setShowScamWarningModal={jest.fn()}
           privacyMode={false}
-          liveQuote={{ price: 10, pricePercentChange1d: -1.5 }}
         />,
       );
 

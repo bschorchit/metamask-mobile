@@ -27,10 +27,6 @@ import { useAnalytics } from '../../../hooks/useAnalytics/useAnalytics';
 import { SCROLL_TO_TOKEN_EVENT } from '../constants';
 import { useMoneyTokenListCta } from '../../Money/hooks/useMoneyTokenListCta';
 import { SCREEN_NAMES } from '../../Money/constants/moneyEvents';
-import {
-  readLiveQuotes,
-  useMarketStats,
-} from '../../../../hooks/assets/market-stats';
 
 export interface FlashListAssetKey {
   address: string;
@@ -105,15 +101,6 @@ const TokenListComponent = ({
     () => (tokenKeys || []).slice(0, maxItems || undefined),
     [tokenKeys, maxItems],
   );
-  // Quotes for the rows on screen. An unchanged quote keeps its object, so a
-  // tick for another row does not redraw this one.
-  const liveQuotes = useMarketStats((quotes) =>
-    readLiveQuotes(
-      quotes,
-      displayTokenKeys.map((item) => item.address),
-    ),
-  );
-
   // Determine if we should show the "View all tokens" button
   const shouldShowViewAllButton = useMemo(
     () => maxItems !== undefined && tokenKeys && tokenKeys.length > maxItems,
@@ -193,7 +180,6 @@ const TokenListComponent = ({
         tokenPositionInList={index + 1}
         tokensInList={displayTokenKeys.length}
         hideSecondaryPriceRow={hideSecondaryPriceRow}
-        liveQuote={liveQuotes[index]}
       />
     ),
     [
@@ -205,7 +191,6 @@ const TokenListComponent = ({
       tokenListItemCta,
       displayTokenKeys.length,
       hideSecondaryPriceRow,
-      liveQuotes,
     ],
   );
 
@@ -229,7 +214,6 @@ const TokenListComponent = ({
           tokenPositionInList={index + 1}
           tokensInList={displayTokenKeys.length}
           hideSecondaryPriceRow={hideSecondaryPriceRow}
-          liveQuote={liveQuotes[index]}
         />
       ))}
       {shouldShowViewAllButton && (
@@ -270,7 +254,6 @@ const TokenListComponent = ({
         }
         extraData={{
           isTokenNetworkFilterEqualCurrentNetwork,
-          liveQuotes,
         }}
         contentContainerStyle={
           isFullView

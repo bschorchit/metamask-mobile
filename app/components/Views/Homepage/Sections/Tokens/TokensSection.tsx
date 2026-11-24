@@ -26,10 +26,6 @@ import {
 } from '../../../../../selectors/assets/assets-list';
 import { useNetworkEnablement } from '../../../../hooks/useNetworkEnablement/useNetworkEnablement';
 import { TokenListItem } from '../../../../UI/Tokens/TokenList/TokenListItem/TokenListItem';
-import {
-  readLiveQuotes,
-  useMarketStats,
-} from '../../../../../hooks/assets/market-stats';
 import RemoveTokenBottomSheet from '../../../../UI/Tokens/TokenList/RemoveTokenBottomSheet';
 import { ScamWarningModal } from '../../../../UI/Tokens/TokenList/ScamWarningModal/ScamWarningModal';
 import { selectPrivacyMode } from '../../../../../selectors/preferencesController';
@@ -160,15 +156,6 @@ const TokensSection = forwardRef<SectionRefreshHandle, TokensSectionProps>(
           .slice(0, MAX_TOKENS_DISPLAYED),
       [sortedTokenKeys, shouldExcludeMusd],
     );
-    // Quotes for the rows shown here. An unchanged quote keeps its object, so a
-    // tick for another row does not redraw this one.
-    const liveQuotes = useMarketStats((quotes) =>
-      readLiveQuotes(
-        quotes,
-        displayTokenKeys.map((item) => item.address),
-      ),
-    );
-
     const showTokensError = hasTokensError;
     // Soft-gate like extension: keep skeletons for unsettled loads only when
     // the list is empty or still just zero native / mUSD placeholders. Real
@@ -282,7 +269,6 @@ const TokensSection = forwardRef<SectionRefreshHandle, TokensSectionProps>(
                     tokenListItemCta={tokenListItemCta}
                     tokenPositionInList={index + 1}
                     tokensInList={displayTokenKeys.length}
-                    liveQuote={liveQuotes[index]}
                   />
                 ))
               )}

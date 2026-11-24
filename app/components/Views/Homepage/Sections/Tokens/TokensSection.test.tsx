@@ -145,14 +145,12 @@ const MockTokenListItem = ({
   tokenListItemCta,
   tokenPositionInList,
   tokensInList,
-  liveQuote,
 }: {
   assetKey: { address: string; chainId?: string };
   showRemoveMenu?: (token: unknown) => void;
   tokenListItemCta?: { label: string };
   tokenPositionInList?: number;
   tokensInList?: number;
-  liveQuote?: { price: number };
 }) => {
   const ReactActual = jest.requireActual('react');
   const { Text, TouchableOpacity } = jest.requireActual('react-native');
@@ -187,22 +185,8 @@ const MockTokenListItem = ({
       { testID: `token-context-${assetKey.address}` },
       `${tokenPositionInList}/${tokensInList}`,
     ),
-    liveQuote
-      ? ReactActual.createElement(
-          Text,
-          { testID: `token-live-quote-${assetKey.address}` },
-          String(liveQuote.price),
-        )
-      : null,
   );
 };
-
-const mockLiveQuotes = jest.fn();
-
-jest.mock('../../../../../hooks/assets/market-stats', () => ({
-  useMarketStats: () => mockLiveQuotes(),
-  readLiveQuotes: jest.fn(),
-}));
 
 jest.mock(
   '../../../../UI/Tokens/TokenList/TokenListItem/TokenListItem',
@@ -213,7 +197,6 @@ jest.mock(
       tokenListItemCta?: { label: string };
       tokenPositionInList?: number;
       tokensInList?: number;
-      liveQuote?: { price: number };
     }) => MockTokenListItem(props),
   }),
 );
@@ -373,7 +356,6 @@ describe('TokensSection', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockRefresh.mockResolvedValue(undefined);
-    mockLiveQuotes.mockReturnValue([]);
     mockUseIsZeroBalanceAccount.mockReturnValue(false);
     mockUseAssetsHaveLoaded.mockReturnValue(true);
     mockSortedTokenKeys.mockReturnValue([]);
@@ -582,26 +564,6 @@ describe('TokensSection', () => {
 
     expect(screen.getByTestId('token-item-0xtoken1')).toBeOnTheScreen();
     expect(screen.getByTestId('token-item-0xtoken2')).toBeOnTheScreen();
-  });
-
-  it('passes each streamed quote to the matching token row', () => {
-    mockUseIsZeroBalanceAccount.mockReturnValue(false);
-    mockSortedTokenKeys.mockReturnValue([
-      { chainId: '0x1', address: '0xtoken1', isStaked: false },
-      { chainId: '0x1', address: '0xtoken2', isStaked: false },
-    ]);
-    mockLiveQuotes.mockReturnValue([{ price: 2.5 }, undefined]);
-
-    renderWithProvider(
-      <TokensSection sectionIndex={0} totalSectionsLoaded={1} />,
-    );
-
-    expect(screen.getByTestId('token-live-quote-0xtoken1')).toHaveTextContent(
-      '2.5',
-    );
-    expect(
-      screen.queryByTestId('token-live-quote-0xtoken2'),
-    ).not.toBeOnTheScreen();
   });
 
   it('forwards Money CTA to account token rows', () => {
