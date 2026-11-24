@@ -47,6 +47,8 @@ export {
 
 const LOG_TAG = '[Money Account]';
 
+export const DEPOSIT_CONFIRMATION_LOAD_TIMEOUT_MS = 15000;
+
 export interface InitiateDepositOptions {
   /** Initial editable deposit amount in USD, automatically quoted for token deposits. */
   amount?: string;
@@ -86,6 +88,12 @@ function waitForNextFrame(): Promise<void> {
   return new Promise((resolve) => {
     requestAnimationFrame(() => resolve());
   });
+}
+
+function hasBatchTransaction(batchId: Hex): boolean {
+  return Engine.context.TransactionController.state.transactions.some(
+    (transaction) => transaction.batchId === batchId,
+  );
 }
 
 function isMoneyConfirmationActive(forceBottomSheet = false): boolean {
@@ -197,6 +205,40 @@ export function useMoneyAccountDeposit() {
         replace: options?.replaceConfirmation,
       });
 
+      let hasRolledBack = false;
+      const rollBackConfirmation = (errorObj: Error) => {
+        hasRolledBack = true;
+        if (isMoneyConfirmationActive(options?.forceBottomSheet)) {
+          if (options?.forceBottomSheet) {
+            // The container ref routes Back to the focused confirmation,
+            // not the nested navigator that initiated the deposit.
+            NavigationService.navigation.goBack();
+          } else {
+            navigation.goBack();
+          }
+        }
+        showToast(
+          MoneyToastOptions.deposit.failed({ intent: options?.intent }),
+        );
+        Logger.error(errorObj, `${LOG_TAG} Deposit setup failed`);
+        showDevErrorAlert(`${LOG_TAG} Deposit setup failed`, errorObj);
+      };
+
+      // `addTransactionBatch` only settles once the user confirms or rejects,
+      // and the loading confirmation cannot be dismissed, so a batch that
+      // never reaches the transaction list would strand the user there.
+      const confirmationLoadWatchdog = setTimeout(() => {
+        if (hasBatchTransaction(batchId)) {
+          return;
+        }
+        clearMoneyAccountDepositIntent(batchId);
+        rollBackConfirmation(
+          new Error(
+            `${LOG_TAG} Deposit confirmation did not load within ${DEPOSIT_CONFIRMATION_LOAD_TIMEOUT_MS}ms`,
+          ),
+        );
+      }, DEPOSIT_CONFIRMATION_LOAD_TIMEOUT_MS);
+
       try {
         // Allows confirmation skeleton to render immediately before setup work for immediate navigation.
         await waitForNextFrame();
@@ -243,24 +285,13 @@ export function useMoneyAccountDeposit() {
       } catch (error) {
         const errorObj = ensureError(error, `${LOG_TAG} Deposit setup failed`);
         clearMoneyAccountDepositIntent(batchId);
-        if (!isUserRejectedError(error, errorObj.message)) {
-          if (isMoneyConfirmationActive(options?.forceBottomSheet)) {
-            if (options?.forceBottomSheet) {
-              // The container ref routes Back to the focused confirmation,
-              // not the nested navigator that initiated the deposit.
-              NavigationService.navigation.goBack();
-            } else {
-              navigation.goBack();
-            }
-          }
-          showToast(
-            MoneyToastOptions.deposit.failed({ intent: options?.intent }),
-          );
-          Logger.error(errorObj, `${LOG_TAG} Deposit setup failed`);
-          showDevErrorAlert(`${LOG_TAG} Deposit setup failed`, errorObj);
+        if (!hasRolledBack && !isUserRejectedError(error, errorObj.message)) {
+          rollBackConfirmation(errorObj);
         }
         // Rethrow so the caller can log the failed initiation.
         throw error;
+      } finally {
+        clearTimeout(confirmationLoadWatchdog);
       }
     },
     [
