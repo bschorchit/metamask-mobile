@@ -8,6 +8,7 @@ import { REDESIGNED_TRANSACTION_TYPES } from '../../../../../components/Views/co
 export function handleShowNotification(transactionMeta: TransactionMeta) {
   const { status } = transactionMeta;
   if (
+    transactionMeta.type !== undefined &&
     REDESIGNED_TRANSACTION_TYPES.includes(transactionMeta.type) &&
     status !== TransactionStatus.failed
   ) {
