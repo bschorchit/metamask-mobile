@@ -2496,17 +2496,18 @@ describe('PerpsOrderView', () => {
   });
 
   describe('when the Trade sheet closes while account support is pending', () => {
+    beforeEach(() => useTradeSheetRoute());
+
     const arrangePendingAccountSupport = async () => {
       let resolveAccountSupport: (
         result: 'supported' | 'unsupported' | 'stale' | 'unmounted',
       ) => void = () => undefined;
-      mockCheckAccountSupport.mockImplementationOnce(
-        () =>
-          new Promise<'supported' | 'unsupported' | 'stale' | 'unmounted'>(
-            (resolve) => {
-              resolveAccountSupport = resolve;
-            },
-          ),
+      mockCheckAccountSupport.mockReturnValueOnce(
+        new Promise<'supported' | 'unsupported' | 'stale' | 'unmounted'>(
+          (resolve) => {
+            resolveAccountSupport = resolve;
+          },
+        ),
       );
       const placeOrder = jest.fn().mockResolvedValue({ success: true });
       (usePerpsOrderExecution as jest.Mock).mockReturnValue({
@@ -2514,7 +2515,6 @@ describe('PerpsOrderView', () => {
         isPlacing: false,
         error: undefined,
       });
-      useTradeSheetRoute();
       const rendered = render(<PerpsOrderView />, { wrapper: TestWrapper });
 
       let submission: void | Promise<void>;
@@ -2524,7 +2524,7 @@ describe('PerpsOrderView', () => {
       });
       expect(mockCheckAccountSupport).toHaveBeenCalledTimes(1);
 
-      const settleAccountSupport = (
+      const settleAccountSupport = async (
         result:
           | 'supported'
           | 'unsupported'
@@ -3009,11 +3009,10 @@ describe('PerpsOrderView', () => {
 
       mockCheckAccountSupport.mockResolvedValueOnce('unmounted');
       let finishValidation!: () => void;
-      validateNow.mockClear().mockImplementationOnce(
-        () =>
-          new Promise((resolve) => {
-            finishValidation = () => resolve({ isValid: true, errors: [] });
-          }),
+      validateNow.mockClear().mockReturnValueOnce(
+        new Promise((resolve) => {
+          finishValidation = () => resolve({ isValid: true, errors: [] });
+        }),
       );
       await confirmDepositOnChain();
       expect(validateNow).toHaveBeenCalledTimes(1);
@@ -3060,11 +3059,10 @@ describe('PerpsOrderView', () => {
       await submit();
       await settleConfirm();
       let allowSupport!: () => void;
-      mockCheckAccountSupport.mockImplementationOnce(
-        () =>
-          new Promise((resolve) => {
-            allowSupport = () => resolve('supported');
-          }),
+      mockCheckAccountSupport.mockReturnValueOnce(
+        new Promise((resolve) => {
+          allowSupport = () => resolve('supported');
+        }),
       );
       await confirmDepositOnChain();
       (usePerpsOrderContext as jest.Mock).mockReturnValue({

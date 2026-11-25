@@ -793,7 +793,7 @@ export function renderPerpsView(
       >
         <Tab.Screen
           name={routeName}
-          component={WrappedComponent as unknown as React.ComponentType}
+          component={WrappedComponent}
           initialParams={initialParams}
         />
         <Tab.Screen
@@ -886,7 +886,7 @@ export function renderPerpsView(
         {presentingRoute ? (
           <Stack.Screen
             name={presentingRoute}
-            component={PresentingRouteProbe as unknown as React.ComponentType}
+            component={PresentingRouteProbe}
           />
         ) : null}
         {!nestMain && (
