@@ -217,7 +217,7 @@ jest.mock('../../utils/perpsAnalyticsAttribution', () => ({
 const mockCheckAccountSupport = jest.fn();
 jest.mock('../../hooks/usePerpsAccountSupport', () => ({
   usePerpsAccountSupport: () => ({
-    isAccountUnsupportedModalVisible: false,
+    unsupportedContentKey: null,
     checkAccountSupport: mockCheckAccountSupport,
     closeAccountUnsupportedModal: jest.fn(),
   }),
@@ -285,6 +285,9 @@ const mockDefaultUsePerpsRewards = () => ({
 const mockDefaultUsePerpsToasts = () => ({
   showToast: jest.fn(),
   PerpsToastOptions: {
+    accountManagement: {
+      deposit: { orderNotPlaced: { id: 'order-not-placed' } },
+    },
     formValidation: {
       orderForm: {
         limitPriceRequired: {},
@@ -673,6 +676,7 @@ let mockPerpsAdvancedChartEnabled = false;
 let mockPaymentOverride: PaymentOverride | undefined;
 let mockTradeWithAnyTokenEnabled = false;
 let mockPerpsSizeDenomination: 'usd' | 'asset' = 'usd';
+let mockPrivateTrading = false;
 let mockSelectedEvmAccount: { address: string } | undefined;
 let mockIsPerpsProModeActive = false;
 const mockResolvePostTradePrompt = jest.fn();
@@ -725,6 +729,12 @@ jest.mock('react-redux', () => {
       const { selectPerpsOrderBookPreferences } = jest.requireActual(
         '../../selectors/perpsController',
       );
+      if (
+        selector ===
+        jest.requireActual('../../../../../selectors/profileController')
+          .selectIsProfileTradingActivityPrivate
+      )
+        return mockPrivateTrading;
       if (selector === selectPerpsTradeWithAnyTokenEnabledFlag) {
         return mockTradeWithAnyTokenEnabled;
       }
@@ -2733,7 +2743,9 @@ describe('PerpsOrderView', () => {
           ? { copyTradeOrigin: options.copyTradeOrigin }
           : {}),
       });
-      const { unmount } = render(<PerpsOrderView />, { wrapper: TestWrapper });
+      const { unmount, rerender } = render(<PerpsOrderView />, {
+        wrapper: TestWrapper,
+      });
 
       const submit = () =>
         act(async () => {
@@ -2759,6 +2771,7 @@ describe('PerpsOrderView', () => {
         });
 
       return {
+        rerender,
         onConfirm,
         handleDepositConfirm,
         placeOrder,
@@ -2972,6 +2985,62 @@ describe('PerpsOrderView', () => {
       await confirmDepositOnChain();
 
       expect(placeOrder).toHaveBeenCalledTimes(1);
+    });
+
+    it.each(['stale', 'unsupported'] as const)(
+      'replaces the deposit progress toast when the support check resolves %s',
+      async (decision) => {
+        const toasts = mockDefaultUsePerpsToasts();
+        (usePerpsToasts as jest.Mock).mockReturnValue(toasts);
+        const { placeOrder, submit, settleConfirm, confirmDepositOnChain } =
+          arrangeDepositFlow();
+        await submit();
+        await settleConfirm();
+        mockCheckAccountSupport.mockResolvedValueOnce(decision);
+        await confirmDepositOnChain();
+        expect(placeOrder).not.toHaveBeenCalled();
+        expect(toasts.showToast).toHaveBeenCalledWith(
+          toasts.PerpsToastOptions.accountManagement.deposit.orderNotPlaced,
+        );
+      },
+    );
+
+    it('replaces the deposit progress toast if the draft changes during the final support read', async () => {
+      const toasts = mockDefaultUsePerpsToasts();
+      (usePerpsToasts as jest.Mock).mockReturnValue(toasts);
+      const {
+        submit,
+        settleConfirm,
+        confirmDepositOnChain,
+        rerender,
+        placeOrder,
+      } = arrangeDepositFlow();
+      await submit();
+      await settleConfirm();
+      let allowSupport!: () => void;
+      mockCheckAccountSupport.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            allowSupport = () => resolve('supported');
+          }),
+      );
+      await confirmDepositOnChain();
+      (usePerpsOrderContext as jest.Mock).mockReturnValue({
+        ...defaultMockHooks.usePerpsOrderContext,
+        orderForm: {
+          ...defaultMockHooks.usePerpsOrderContext.orderForm,
+          amount: '987',
+        },
+      });
+      rerender(<PerpsOrderView />);
+      await act(async () => {
+        allowSupport();
+        await flushAsync();
+      });
+      expect(placeOrder).not.toHaveBeenCalled();
+      expect(toasts.showToast).toHaveBeenCalledWith(
+        toasts.PerpsToastOptions.accountManagement.deposit.orderNotPlaced,
+      );
     });
 
     // Deposit confirm dismisses first; funds arriving later re-enter
@@ -7776,6 +7845,7 @@ describe('PerpsOrderView', () => {
       clearPostTradeShareSession();
       ToastService.resetForTesting();
       mockCanShareCopyTrade.mockReturnValue(true);
+      mockPrivateTrading = false;
       applyDefaultHookMocks();
     });
 
@@ -7809,48 +7879,52 @@ describe('PerpsOrderView', () => {
       expect(mockMessengerCall).not.toHaveBeenCalled();
     });
 
-    it('opens the share sheet for a copied market order and skips the success toast', async () => {
-      const showToast = jest.fn();
-      (usePerpsToasts as jest.Mock).mockReturnValue({
-        ...mockDefaultUsePerpsToasts(),
-        showToast,
-      });
-      const placeOrder = jest.fn().mockResolvedValue({ success: true });
-      (usePerpsOrderExecution as jest.Mock).mockReturnValue({
-        placeOrder,
-        isPlacing: false,
-      });
-      useTradeSheetRoute({
-        stayOnCurrentScreen: true,
-        copyTradeOrigin,
-      });
-      render(<PerpsOrderView />, { wrapper: TestWrapper });
-
-      await act(async () => {
-        getMockTradeScreenProps().onSubmit();
-      });
-
-      const pending = getPostTradeShareSession();
-      expect(pending?.product).toBe('perps');
-      expect(pending?.status).toBe('pending');
-      expect(showToast).not.toHaveBeenCalled();
-
-      await act(async () => {
-        await getOnSuccess()(undefined, {
-          success: true,
-          orderId: '42',
-          averagePrice: '3200',
+    it.each([false, true])(
+      'opens the share sheet for a copied market order (private trading: %s)',
+      async (privateTrading) => {
+        mockPrivateTrading = privateTrading;
+        const showToast = jest.fn();
+        (usePerpsToasts as jest.Mock).mockReturnValue({
+          ...mockDefaultUsePerpsToasts(),
+          showToast,
         });
-      });
+        const placeOrder = jest.fn().mockResolvedValue({ success: true });
+        (usePerpsOrderExecution as jest.Mock).mockReturnValue({
+          placeOrder,
+          isPlacing: false,
+        });
+        useTradeSheetRoute({
+          stayOnCurrentScreen: true,
+          copyTradeOrigin,
+        });
+        render(<PerpsOrderView />, { wrapper: TestWrapper });
 
-      const completed = getPostTradeShareSession();
-      expect(completed?.status).toBe('complete');
-      if (completed?.product !== 'perps') {
-        return;
-      }
-      expect(completed.orderId).toBe('42');
-      expect(showToast).not.toHaveBeenCalled();
-    });
+        await act(async () => {
+          getMockTradeScreenProps().onSubmit();
+        });
+
+        const pending = getPostTradeShareSession();
+        expect(pending?.product).toBe('perps');
+        expect(pending?.status).toBe('pending');
+        expect(showToast).not.toHaveBeenCalled();
+
+        await act(async () => {
+          await getOnSuccess()(undefined, {
+            success: true,
+            orderId: '42',
+            averagePrice: '3200',
+          });
+        });
+
+        const completed = getPostTradeShareSession();
+        expect(completed?.status).toBe('complete');
+        if (completed?.product !== 'perps') {
+          return;
+        }
+        expect(completed.orderId).toBe('42');
+        expect(showToast).not.toHaveBeenCalled();
+      },
+    );
 
     it('does not close any toast when a copied market order opens the share sheet outside a deposit', async () => {
       const closeToast = jest.fn();

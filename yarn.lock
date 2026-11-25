@@ -11361,7 +11361,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@metamask/perps-controller@npm:^26.0.0":
+"@metamask/perps-controller@npm:26.1.0":
   version: 26.1.0
   resolution: "@metamask/perps-controller@npm:26.1.0"
   dependencies:
@@ -38405,7 +38405,7 @@ __metadata:
     "@metamask/notification-services-controller": "npm:^29.0.3"
     "@metamask/object-multiplex": "npm:^2.1.0"
     "@metamask/permission-controller": "npm:^14.1.0"
-    "@metamask/perps-controller": "npm:^26.0.0"
+    "@metamask/perps-controller": "npm:26.1.0"
     "@metamask/phishing-controller": "npm:^18.3.1"
     "@metamask/platform-api-docs": "npm:^0.2.1"
     "@metamask/post-message-stream": "npm:^10.0.0"

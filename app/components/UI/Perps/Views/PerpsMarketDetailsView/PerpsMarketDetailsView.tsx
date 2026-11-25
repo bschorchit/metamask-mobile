@@ -340,12 +340,6 @@ const PerpsMarketDetailsView: React.FC<PerpsMarketDetailsViewProps> = ({
     navigateToClosePosition,
   } = usePerpsNavigation();
   const { useBottomSheet } = usePerpsScreenVsBottomSheetAbTest();
-  const {
-    isAccountUnsupportedModalVisible,
-    checkAccountSupport,
-    closeAccountUnsupportedModal,
-  } = usePerpsAccountSupport();
-
   // Use position management hook for bottom sheet state and handlers
   const {
     showModifyActionSheet,
@@ -424,6 +418,15 @@ const PerpsMarketDetailsView: React.FC<PerpsMarketDetailsViewProps> = ({
 
     return fullMarket ?? routeMarket;
   }, [activeProvider, markets, routeMarket, needsEnrichment]);
+
+  const {
+    unsupportedContentKey,
+    showPrefetchedUnsupported,
+    closeAccountUnsupportedModal,
+  } = usePerpsAccountSupport(
+    PERPS_EVENT_VALUE.SCREEN_TYPE.ASSET_DETAILS,
+    market?.providerId,
+  );
 
   // About section: fires displayed (on render) + viewed (on scroll into view)
   // analytics and gates the section's visibility on an available description.
@@ -1224,8 +1227,6 @@ const PerpsMarketDetailsView: React.FC<PerpsMarketDetailsViewProps> = ({
     totalBalance: account?.totalBalance,
   });
 
-  const isSupportCheckInFlightRef = useRef(false);
-
   const handleTradeAction = useCallback(
     (direction: 'long' | 'short') => {
       playImpact(ImpactMoment.SecondaryCTA).catch(() => undefined);
@@ -1242,23 +1243,11 @@ const PerpsMarketDetailsView: React.FC<PerpsMarketDetailsViewProps> = ({
           return;
         }
 
-        if (useBottomSheet) {
-          // A press during a pending support read would pass the same check
-          // and open a second Trade sheet.
-          if (isSupportCheckInFlightRef.current) {
-            return;
-          }
-          isSupportCheckInFlightRef.current = true;
-          let support: Awaited<ReturnType<typeof checkAccountSupport>>;
-          try {
-            support = await checkAccountSupport(market.providerId);
-          } finally {
-            isSupportCheckInFlightRef.current = false;
-          }
-          if (support !== 'supported' || !navigation.isFocused()) {
-            return;
-          }
-        }
+        if (
+          useBottomSheet &&
+          (!navigation.isFocused() || showPrefetchedUnsupported())
+        )
+          return;
 
         // While cross margin is off, an existing cross position cannot be traded.
         if (
@@ -1318,7 +1307,7 @@ const PerpsMarketDetailsView: React.FC<PerpsMarketDetailsViewProps> = ({
       marketData,
       chartLibrary,
       useBottomSheet,
-      checkAccountSupport,
+      showPrefetchedUnsupported,
     ],
   );
 
@@ -2505,11 +2494,11 @@ const PerpsMarketDetailsView: React.FC<PerpsMarketDetailsViewProps> = ({
           }
         />
       )}
-      {isAccountUnsupportedModalVisible && (
+      {unsupportedContentKey && (
         <PerpsBottomSheetTooltip
           isVisible
           onClose={closeAccountUnsupportedModal}
-          contentKey="account_not_supported"
+          contentKey={unsupportedContentKey}
         />
       )}
 
