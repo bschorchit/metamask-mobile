@@ -54,6 +54,7 @@ export enum FeatureFlagNames {
   moneyVbaCompletedActivityEnabled = 'moneyVbaCompletedActivityEnabled',
   perpsBrandRefresh = 'perpsBrandRefresh',
   exploreBrandRefresh = 'exploreBrandRefresh',
+  exploreSearchPromoteStocksExactTicker = 'exploreSearchPromoteStocksExactTicker',
   glassHeaders = 'glassHeaders',
   mfaUiKit = 'mfaUiKit',
   slowNetworkBanner = 'slowNetworkBanner',
@@ -91,5 +92,8 @@ export const DEFAULT_FEATURE_FLAG_VALUES: Partial<
   [FeatureFlagNames.moneyVbaCompletedActivityEnabled]: {
     enabled: false,
     minimumVersion: null,
+  },
+  [FeatureFlagNames.exploreSearchPromoteStocksExactTicker]: {
+    enabled: false,
   },
 };
