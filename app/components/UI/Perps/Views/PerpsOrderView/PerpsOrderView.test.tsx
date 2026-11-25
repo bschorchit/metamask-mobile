@@ -215,8 +215,10 @@ jest.mock('../../utils/perpsAnalyticsAttribution', () => ({
 }));
 
 const mockCheckAccountSupport = jest.fn();
+const mockReadContextKey = jest.fn<string, []>();
 jest.mock('../../hooks/usePerpsAccountSupport', () => ({
   usePerpsAccountSupport: () => ({
+    readContextKey: mockReadContextKey,
     unsupportedContentKey: null,
     checkAccountSupport: mockCheckAccountSupport,
     closeAccountUnsupportedModal: jest.fn(),
@@ -1426,6 +1428,7 @@ describe('PerpsOrderView', () => {
     mockPerpsSizeDenomination = 'usd';
     jest.useRealTimers();
     jest.clearAllMocks();
+    mockReadContextKey.mockReturnValue('order-context');
     mockCheckAccountSupport.mockResolvedValue('supported');
     applyDefaultHookMocks();
     (global.requestAnimationFrame as jest.Mock).mockImplementation(
@@ -2688,6 +2691,12 @@ describe('PerpsOrderView', () => {
     }) => {
       mockTradeWithAnyTokenEnabled = true;
       mockUseIsPerpsBalanceSelected.mockReturnValue(false);
+      const validateNow = jest.fn().mockResolvedValue({
+        isValid: true,
+        errors: [],
+        warnings: [],
+        fieldIssues: [],
+      });
       if (options?.validationPending) {
         (usePerpsOrderValidation as jest.Mock).mockReturnValue({
           isValid: true,
@@ -2696,12 +2705,7 @@ describe('PerpsOrderView', () => {
           fieldIssues: [],
           isValidating: true,
           insufficientBalanceErrors: [],
-          validateNow: jest.fn().mockResolvedValue({
-            isValid: true,
-            errors: [],
-            warnings: [],
-            fieldIssues: [],
-          }),
+          validateNow,
         });
       }
       const { useTransactionMetadataRequest } = jest.requireMock(
@@ -2774,6 +2778,7 @@ describe('PerpsOrderView', () => {
         rerender,
         onConfirm,
         handleDepositConfirm,
+        validateNow,
         placeOrder,
         submit,
         settleConfirm,
@@ -2985,6 +2990,43 @@ describe('PerpsOrderView', () => {
       await confirmDepositOnChain();
 
       expect(placeOrder).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not place the credited order if its context switches during validation after unmount', async () => {
+      const toasts = mockDefaultUsePerpsToasts();
+      (usePerpsToasts as jest.Mock).mockReturnValue(toasts);
+      const {
+        submit,
+        settleConfirm,
+        unmount,
+        validateNow,
+        confirmDepositOnChain,
+        placeOrder,
+      } = arrangeDepositFlow({ validationPending: true });
+      await submit();
+      await settleConfirm();
+      unmount();
+
+      mockCheckAccountSupport.mockResolvedValueOnce('unmounted');
+      let finishValidation!: () => void;
+      validateNow.mockClear().mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finishValidation = () => resolve({ isValid: true, errors: [] });
+          }),
+      );
+      await confirmDepositOnChain();
+      expect(validateNow).toHaveBeenCalledTimes(1);
+      mockReadContextKey.mockReturnValue('other-account');
+      await act(async () => {
+        finishValidation();
+        await flushAsync();
+      });
+
+      expect(placeOrder).not.toHaveBeenCalled();
+      expect(toasts.showToast).toHaveBeenCalledWith(
+        toasts.PerpsToastOptions.accountManagement.deposit.orderNotPlaced,
+      );
     });
 
     it.each(['stale', 'unsupported'] as const)(
