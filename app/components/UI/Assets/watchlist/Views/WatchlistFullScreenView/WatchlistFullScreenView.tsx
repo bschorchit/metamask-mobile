@@ -5,7 +5,12 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { Pressable, View } from 'react-native';
+import {
+  Pressable,
+  View,
+  type AccessibilityActionEvent,
+  type AccessibilityActionInfo,
+} from 'react-native';
 import Animated, { FadeOut, LinearTransition } from 'react-native-reanimated';
 import ReorderableList, {
   type ReorderableListReorderEvent,
@@ -38,6 +43,7 @@ import { WatchlistAnalytics } from '../../constants/watchlistAnalytics';
 import { mapWatchlistTokenToTrendingAsset } from '../../../../../Views/Homepage/Sections/Watchlist/utils/mapWatchlistTokenToTrendingAsset';
 import TrendingTokensSkeleton from '../../../../Trending/components/TrendingTokenSkeleton/TrendingTokensSkeleton';
 import { strings } from '../../../../../../../locales/i18n';
+import { fireImpact, ImpactMoment } from '../../../../../../util/haptics';
 import { WatchlistFullScreenViewSelectorsIDs } from './WatchlistFullScreenView.testIds';
 import WatchlistEditableRow from './WatchlistEditableRow';
 import WatchlistEmptyCTA from '../../components/WatchlistEmptyCTA';
@@ -105,6 +111,8 @@ interface MixedPerpsRowProps {
   canUseLivePerpsPrices: boolean;
   onPress: (market: PerpsMarketData) => void;
   onRemove: () => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
 }
 
 const MixedPerpsRow = ({
@@ -113,10 +121,40 @@ const MixedPerpsRow = ({
   canUseLivePerpsPrices,
   onPress,
   onRemove,
+  onMoveUp,
+  onMoveDown,
 }: MixedPerpsRowProps): React.JSX.Element => {
   const { styles } = useStyles(styleSheet, {});
   const drag = useReorderableDrag();
   const rowClassName = isEditMode ? 'px-0' : '-mx-4 w-auto px-4';
+
+  const handleLongPress = useCallback(() => {
+    fireImpact(ImpactMoment.SliderGrip);
+    drag();
+  }, [drag]);
+
+  const accessibilityActions = useMemo<AccessibilityActionInfo[]>(
+    () => [
+      ...(onMoveUp
+        ? [{ name: 'moveUp', label: strings('token_watchlist.move_up') }]
+        : []),
+      ...(onMoveDown
+        ? [{ name: 'moveDown', label: strings('token_watchlist.move_down') }]
+        : []),
+    ],
+    [onMoveDown, onMoveUp],
+  );
+
+  const handleAccessibilityAction = useCallback(
+    (event: AccessibilityActionEvent) => {
+      if (event.nativeEvent.actionName === 'moveUp') {
+        onMoveUp?.();
+      } else if (event.nativeEvent.actionName === 'moveDown') {
+        onMoveDown?.();
+      }
+    },
+    [onMoveDown, onMoveUp],
+  );
 
   const row =
     item.status === 'resolved' ? (
@@ -145,11 +183,13 @@ const MixedPerpsRow = ({
     <View style={styles.editableRow}>
       <Pressable
         style={styles.dragArea}
-        onLongPress={drag}
+        onLongPress={handleLongPress}
         delayLongPress={300}
         testID={WatchlistFullScreenViewSelectorsIDs.DRAG_HANDLE}
         accessibilityRole="button"
         accessibilityLabel="Drag to reorder"
+        accessibilityActions={accessibilityActions}
+        onAccessibilityAction={handleAccessibilityAction}
       >
         <View style={styles.dragHandle} pointerEvents="none">
           <Icon
@@ -177,6 +217,9 @@ const MixedPerpsRow = ({
 
 interface WatchlistFullScreenShellProps {
   tokenCount: number;
+  perpsCount?: number;
+  isUnified?: boolean;
+  canUseLivePerpsPrices?: boolean;
   isLoading: boolean;
   isEmpty: boolean;
   hasItems: boolean;
@@ -192,6 +235,9 @@ interface WatchlistFullScreenShellProps {
 
 const WatchlistFullScreenShell = ({
   tokenCount,
+  perpsCount = 0,
+  isUnified = false,
+  canUseLivePerpsPrices = false,
   isLoading,
   isEmpty,
   hasItems,
@@ -213,9 +259,12 @@ const WatchlistFullScreenShell = ({
 
   useTrackWatchlistPageViewed({
     tokenCount,
+    perpsCount,
     isEmpty,
     isLoading,
     source: routeParams?.source ?? WatchlistAnalytics.PAGE_VIEW_SOURCE.HOMEPAGE,
+    activeTab: isUnified ? 'all' : WatchlistAnalytics.ACTIVE_TAB.TOKENS,
+    isUnified,
   });
 
   const handleBack = useCallback(() => {
@@ -350,7 +399,11 @@ const WatchlistFullScreenShell = ({
       ) : null}
 
       {isSearchMode ? (
-        <WatchlistSearchContent onDismiss={handleDismissSearch} />
+        <WatchlistSearchContent
+          onDismiss={handleDismissSearch}
+          activeFilter={isUnified ? 'all' : 'tokens'}
+          canUseLivePerpsPrices={canUseLivePerpsPrices}
+        />
       ) : (
         <>
           <View style={styles.titleContainer}>
@@ -402,10 +455,20 @@ const LegacyWatchlistFullScreenView = (): React.JSX.Element => {
           position={index}
           isEditMode={isEditMode}
           onRemoveFromDraft={onRemoveFromDraft}
+          onMoveUp={
+            isEditMode && index > 0
+              ? () => handleReorder({ from: index, to: index - 1 })
+              : undefined
+          }
+          onMoveDown={
+            isEditMode && index < displayTokens.length - 1
+              ? () => handleReorder({ from: index, to: index + 1 })
+              : undefined
+          }
         />
       </Animated.View>
     ),
-    [isEditMode, onRemoveFromDraft],
+    [displayTokens.length, handleReorder, isEditMode, onRemoveFromDraft],
   );
 
   const keyExtractor = useCallback((item: TrendingAsset) => item.assetId, []);
@@ -454,6 +517,7 @@ const MixedWatchlistFullScreenView = (): React.JSX.Element => {
     canUseMotion,
     canRefresh,
     tokenCount,
+    perpsCount,
     isInitialLoading,
     isOrderReady,
     persistOrder,
@@ -647,35 +711,53 @@ const MixedWatchlistFullScreenView = (): React.JSX.Element => {
   const animateEditRow = isEditMode && canUseMotion;
 
   const renderItem = useCallback(
-    ({ item, index }: { item: UnifiedWatchlistItem; index: number }) => (
-      <Animated.View
-        exiting={animateEditRow ? rowExitAnimation : undefined}
-        layout={animateEditRow ? rowLayoutAnimation : undefined}
-      >
-        {item.kind === 'token' ? (
-          <WatchlistEditableRow
-            token={item.token}
-            position={index}
-            isEditMode={isEditMode}
-            onRemoveFromDraft={() => handleRemoveFromWatchlist(item)}
-          />
-        ) : (
-          <MixedPerpsRow
-            item={item}
-            isEditMode={isEditMode}
-            canUseLivePerpsPrices={canUseLivePerpsPrices}
-            onPress={handlePerpPress}
-            onRemove={() => handleRemoveFromWatchlist(item)}
-          />
-        )}
-      </Animated.View>
-    ),
+    ({ item, index }: { item: UnifiedWatchlistItem; index: number }) => {
+      const onMoveUp =
+        isEditMode && isOrderReady && index > 0
+          ? () => handleReorder({ from: index, to: index - 1 })
+          : undefined;
+      const onMoveDown =
+        isEditMode && isOrderReady && index < visibleItems.length - 1
+          ? () => handleReorder({ from: index, to: index + 1 })
+          : undefined;
+
+      return (
+        <Animated.View
+          exiting={animateEditRow ? rowExitAnimation : undefined}
+          layout={animateEditRow ? rowLayoutAnimation : undefined}
+        >
+          {item.kind === 'token' ? (
+            <WatchlistEditableRow
+              token={item.token}
+              position={index}
+              isEditMode={isEditMode}
+              onRemoveFromDraft={() => handleRemoveFromWatchlist(item)}
+              onMoveUp={onMoveUp}
+              onMoveDown={onMoveDown}
+            />
+          ) : (
+            <MixedPerpsRow
+              item={item}
+              isEditMode={isEditMode}
+              canUseLivePerpsPrices={canUseLivePerpsPrices}
+              onPress={handlePerpPress}
+              onRemove={() => handleRemoveFromWatchlist(item)}
+              onMoveUp={onMoveUp}
+              onMoveDown={onMoveDown}
+            />
+          )}
+        </Animated.View>
+      );
+    },
     [
       animateEditRow,
       canUseLivePerpsPrices,
       handlePerpPress,
       handleRemoveFromWatchlist,
+      handleReorder,
       isEditMode,
+      isOrderReady,
+      visibleItems.length,
     ],
   );
 
@@ -688,6 +770,9 @@ const MixedWatchlistFullScreenView = (): React.JSX.Element => {
   return (
     <WatchlistFullScreenShell
       tokenCount={tokenCount}
+      perpsCount={perpsCount}
+      isUnified
+      canUseLivePerpsPrices={canUseLivePerpsPrices}
       isLoading={isInitialLoading}
       isEmpty={isEmpty}
       hasItems={hasItems}

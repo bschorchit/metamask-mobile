@@ -1,5 +1,10 @@
-import React, { useCallback } from 'react';
-import { Pressable, View } from 'react-native';
+import React, { useCallback, useMemo } from 'react';
+import {
+  Pressable,
+  View,
+  type AccessibilityActionEvent,
+  type AccessibilityActionInfo,
+} from 'react-native';
 import {
   ButtonIcon,
   ButtonIconSize,
@@ -10,6 +15,8 @@ import {
 } from '@metamask/design-system-react-native';
 import { useReorderableDrag } from 'react-native-reorderable-list';
 import { useStyles } from '../../../../../../component-library/hooks';
+import { fireImpact, ImpactMoment } from '../../../../../../util/haptics';
+import { strings } from '../../../../../../../locales/i18n';
 import TrendingTokenRowItem from '../../../../Trending/components/TrendingTokenRowItem/TrendingTokenRowItem';
 import { TokenDetailsSource } from '../../../../TokenDetails/constants/constants';
 import { WatchlistFullScreenViewSelectorsIDs } from './WatchlistFullScreenView.testIds';
@@ -21,6 +28,8 @@ interface WatchlistEditableRowProps {
   position: number;
   isEditMode: boolean;
   onRemoveFromDraft?: (assetId: string) => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
 }
 
 /**
@@ -33,13 +42,43 @@ const WatchlistEditableRow = ({
   position,
   isEditMode,
   onRemoveFromDraft,
+  onMoveUp,
+  onMoveDown,
 }: WatchlistEditableRowProps): React.JSX.Element => {
   const { styles } = useStyles(styleSheet, {});
   const drag = useReorderableDrag();
 
+  const handleLongPress = useCallback(() => {
+    fireImpact(ImpactMoment.SliderGrip);
+    drag();
+  }, [drag]);
+
   const handleUnwatch = useCallback(() => {
     onRemoveFromDraft?.(String(token.assetId));
   }, [onRemoveFromDraft, token.assetId]);
+
+  const accessibilityActions = useMemo<AccessibilityActionInfo[]>(
+    () => [
+      ...(onMoveUp
+        ? [{ name: 'moveUp', label: strings('token_watchlist.move_up') }]
+        : []),
+      ...(onMoveDown
+        ? [{ name: 'moveDown', label: strings('token_watchlist.move_down') }]
+        : []),
+    ],
+    [onMoveDown, onMoveUp],
+  );
+
+  const handleAccessibilityAction = useCallback(
+    (event: AccessibilityActionEvent) => {
+      if (event.nativeEvent.actionName === 'moveUp') {
+        onMoveUp?.();
+      } else if (event.nativeEvent.actionName === 'moveDown') {
+        onMoveDown?.();
+      }
+    },
+    [onMoveDown, onMoveUp],
+  );
 
   const rowBody = (
     <>
@@ -76,11 +115,13 @@ const WatchlistEditableRow = ({
       {isEditMode ? (
         <Pressable
           style={styles.dragArea}
-          onLongPress={drag}
+          onLongPress={handleLongPress}
           delayLongPress={300}
           testID={WatchlistFullScreenViewSelectorsIDs.DRAG_HANDLE}
           accessibilityRole="button"
           accessibilityLabel="Drag to reorder"
+          accessibilityActions={accessibilityActions}
+          onAccessibilityAction={handleAccessibilityAction}
         >
           {rowBody}
         </Pressable>
