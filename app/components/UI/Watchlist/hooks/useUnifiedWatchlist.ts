@@ -24,7 +24,6 @@ import {
   createUnavailableWatchlistPerp,
   createUnifiedWatchlistPerp,
   createUnifiedWatchlistToken,
-  getTokenWatchlistKey,
 } from '../utils';
 import { useWatchlistOrder } from './useWatchlistOrder';
 
@@ -83,25 +82,6 @@ export const useUnifiedWatchlist = (): UnifiedWatchlistResult => {
   const tokenMembershipAssetIds = isTokenWatchlistEnabled
     ? (tokenMembershipBlob?.assets ?? EMPTY_ASSET_IDS)
     : EMPTY_ASSET_IDS;
-  const hydratedTokenKeys = useMemo(
-    () => new Set(tokens.map((item) => item.key)),
-    [tokens],
-  );
-  const isTokenMetadataComplete =
-    !isTokenWatchlistEnabled ||
-    (tokenMembershipBlob !== undefined &&
-      (tokenMembershipAssetIds.length === 0 ||
-        (tokenData !== undefined &&
-          tokenMembershipAssetIds.every((assetId) =>
-            hydratedTokenKeys.has(getTokenWatchlistKey(assetId)),
-          ))));
-  const tokenMetadataCoverageError =
-    isTokenWatchlistEnabled &&
-    tokenMembershipBlob !== undefined &&
-    tokenData !== undefined &&
-    !isTokenMetadataComplete
-      ? 'Some watchlist metadata is unavailable'
-      : null;
   const isTokenHydrationUnavailable =
     isTokenWatchlistEnabled &&
     isOffline &&
@@ -200,7 +180,6 @@ export const useUnifiedWatchlist = (): UnifiedWatchlistResult => {
       error: isTokenWatchlistEnabled
         ? (tokenMembershipError?.message ??
           tokenError?.message ??
-          tokenMetadataCoverageError ??
           (isTokenHydrationUnavailable
             ? 'Watchlist metadata is unavailable offline'
             : null))
@@ -218,7 +197,7 @@ export const useUnifiedWatchlist = (): UnifiedWatchlistResult => {
     canFetchSuggestions: !isOffline && hardwareTier !== 'LOW',
     tokenMembershipAssetIds,
     perpsMembershipSymbols: isPerpsEnabled ? watchlistSymbols : EMPTY_SYMBOLS,
-    tokenCount: isTokenWatchlistEnabled ? tokenMembershipAssetIds.length : 0,
+    tokenCount: isTokenWatchlistEnabled ? tokens.length : 0,
     perpsCount: isPerpsEnabled ? watchlistSymbols.length : 0,
     isInitialLoading:
       isRefreshing ||
