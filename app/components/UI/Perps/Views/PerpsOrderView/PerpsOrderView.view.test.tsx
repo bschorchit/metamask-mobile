@@ -26,24 +26,25 @@ import {
   type OrderResult,
   type PerpsAccountSupport,
   type Position,
-  type PerpsControllerState,
 } from '@metamask/perps-controller';
 import Engine from '../../../../../core/Engine';
-import { updateBgState } from '../../../../../core/redux/slices/engine';
 import { MetaMetricsEvents } from '../../../../../core/Analytics';
 import { analytics } from '../../../../../util/analytics/analytics';
 import Routes from '../../../../../constants/navigation/Routes';
 import { strings } from '../../../../../../locales/i18n';
 import {
+  createPerpsControllerStateHarness,
   wirePerpsControllerForStore,
   withLighterBuildEnabled,
 } from '../../../../../../tests/component-view/helpers/perpsViewTestHelpers';
 import {
   defaultPositionForViews,
+  getTabProbeTestId,
   renderPerpsOrderView,
   type PerpsExtraRoute,
   type PerpsStreamOverrides,
 } from '../../../../../../tests/component-view/renderers/perpsViewRenderer';
+import { getRouteProbeTestId } from '../../../../../../tests/component-view/render';
 import {
   PerpsBottomSheetTooltipSelectorsIDs,
   PerpsLimitPriceBottomSheetSelectorsIDs,
@@ -103,14 +104,16 @@ const eligibleOverrides = {
   },
 };
 
-const setMockPerpsControllerState = (state: PerpsControllerState) => {
-  const engineWithState = Engine as unknown as {
-    state: Record<string, unknown>;
-  };
-  engineWithState.state = {
-    ...engineWithState.state,
-    PerpsController: state,
-  };
+// Moving to testnet changes the account-support context key, as an account
+// or provider switch would.
+const switchPerpsSupportContext = (
+  store: Parameters<typeof createPerpsControllerStateHarness>[0],
+) => {
+  const harness = createPerpsControllerStateHarness(store);
+  act(() => {
+    harness.sync({ isTestnet: true });
+  });
+  harness.cleanup();
 };
 
 const marketDetailsRoute: PerpsExtraRoute = {
@@ -520,16 +523,7 @@ describe('PerpsOrderView', () => {
     getAccountSupport.mockImplementation(
       () => new Promise<PerpsAccountSupport>(() => undefined),
     );
-    const currentPerpsState =
-      store.getState().engine.backgroundState.PerpsController;
-    act(() => {
-      setMockPerpsControllerState({
-        ...currentPerpsState,
-        isTestnet: true,
-      });
-      store.dispatch(updateBgState({ key: 'PerpsController' }));
-    });
-    setMockPerpsControllerState(currentPerpsState);
+    switchPerpsSupportContext(store);
 
     await waitFor(() => {
       expect(
@@ -588,7 +582,9 @@ describe('PerpsOrderView', () => {
     });
 
     expect(
-      await screen.findByTestId(`route-${Routes.PERPS.MARKET_DETAILS}`),
+      await screen.findByTestId(
+        getRouteProbeTestId(Routes.PERPS.MARKET_DETAILS),
+      ),
     ).toBeOnTheScreen();
     expect(placeOrder).not.toHaveBeenCalled();
   });
@@ -629,9 +625,9 @@ describe('PerpsOrderView', () => {
     getAccountSupport.mockClear();
     fireEvent.press(placeOrderButton);
     await waitFor(() => expect(getAccountSupport).toHaveBeenCalledTimes(1));
-    fireEvent.press(screen.getByTestId(`tab-${Routes.WALLET_VIEW}`));
+    fireEvent.press(screen.getByTestId(getTabProbeTestId(Routes.WALLET_VIEW)));
     expect(
-      await screen.findByTestId(`route-${Routes.WALLET_VIEW}`),
+      await screen.findByTestId(getRouteProbeTestId(Routes.WALLET_VIEW)),
     ).toBeOnTheScreen();
     await act(async () => {
       resolveAccountSupport({ isSupported: true });
@@ -683,6 +679,14 @@ describe('PerpsOrderView', () => {
       await screen.findByTestId(PerpsAmountDisplaySelectorsIDs.TOUCHABLE),
     );
     fireEvent.press(await screen.findByTestId(KeypadTestIds.KEY_5));
+    fireEvent.press(
+      screen.getByTestId(PerpsTradeSheetSelectorsIDs.AMOUNT_KEYPAD_DONE_BUTTON),
+    );
+    // Let validation settle on the edited (still valid) amount. Otherwise the
+    // pending validation, not the edited-input check, drops the submission.
+    await waitForEnabledPlaceOrderButton(
+      PerpsTradeSheetSelectorsIDs.PLACE_ORDER_BUTTON,
+    );
     await act(async () => {
       resolveAccountSupport({ isSupported: true });
     });
@@ -825,16 +829,7 @@ describe('PerpsOrderView', () => {
     getAccountSupport.mockClear();
     fireEvent.press(submitButton);
     await waitFor(() => expect(getAccountSupport).toHaveBeenCalledTimes(1));
-    const currentPerpsState =
-      store.getState().engine.backgroundState.PerpsController;
-    act(() => {
-      setMockPerpsControllerState({
-        ...currentPerpsState,
-        isTestnet: true,
-      });
-      store.dispatch(updateBgState({ key: 'PerpsController' }));
-    });
-    setMockPerpsControllerState(currentPerpsState);
+    switchPerpsSupportContext(store);
     await act(async () => {
       resolveAccountSupport({
         isSupported: false,
