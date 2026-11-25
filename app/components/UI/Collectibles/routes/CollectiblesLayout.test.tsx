@@ -5,6 +5,10 @@ import { strings } from '../../../../../locales/i18n';
 import { collectiblesTestIds } from '#app/components/UI/Collectibles/Collectibles.testIds';
 import { CollectiblesLayout } from './CollectiblesLayout';
 
+jest.mock('#app/components/UI/Collectibles/hooks/usePacksCatalog', () => ({
+  usePacksCatalog: () => ({ packs: [], categories: [], isPending: true }),
+}));
+
 describe('CollectiblesLayout', () => {
   it('opens on the Collectibles home screen', () => {
     renderWithProvider(<CollectiblesLayout />);
