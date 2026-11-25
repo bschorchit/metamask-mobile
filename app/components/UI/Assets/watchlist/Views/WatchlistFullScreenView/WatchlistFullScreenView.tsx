@@ -801,6 +801,7 @@ const MixedWatchlistFullScreenView = (): React.JSX.Element => {
           onAddPerpPress={handleAddPerp}
           canUseLivePerpsPrices={canUseLivePerpsPrices}
           enableMotion={canUseMotion}
+          showTypeTag
         />
       </Animated.View>
     );
@@ -857,7 +858,9 @@ const MixedWatchlistFullScreenView = (): React.JSX.Element => {
 
   const renderContent = (): React.ReactNode => {
     if (!hasItems && hasActiveError && !hasSuggestions) {
-      return <WatchlistErrorRow onRetry={retryLoadHandler} />;
+      return (
+        <WatchlistErrorRow onRetry={retryLoadHandler} twClassName="px-4" />
+      );
     }
 
     if (!hasItems && activeFilter === 'perps' && !hasSuggestions) {
@@ -891,7 +894,7 @@ const MixedWatchlistFullScreenView = (): React.JSX.Element => {
     return (
       <Box twClassName="flex-1">
         {hasActiveError ? (
-          <WatchlistErrorRow onRetry={retryLoadHandler} />
+          <WatchlistErrorRow onRetry={retryLoadHandler} twClassName="px-4" />
         ) : null}
         <ReorderableList
           data={visibleItems}
