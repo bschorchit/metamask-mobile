@@ -37,8 +37,9 @@ import useLimits from '../../hooks/useLimits';
 import useBalance from '../../hooks/useBalance';
 import useAddressBalance from '../../../../../hooks/useAddressBalance/useAddressBalance';
 import { Asset } from '../../../../../hooks/useAddressBalance/useAddressBalance.types';
-import { useTronAmountValidation } from '../../hooks/useTronAmountValidation';
+import { useSnapAmountValidation } from '../../hooks/useSnapAmountValidation';
 import { getMaxSendableTronAmount } from '../../../../../../core/Multichain/tron';
+import { getMaxSendableStellarAmount } from '../../../../../../core/Multichain/stellar';
 import { CaipAssetType } from '@metamask/snaps-sdk';
 import { RootState } from '../../../../../../reducers';
 import { getMemoizedInternalAccountByAddress } from '../../../../../../selectors/accountsController';
@@ -181,6 +182,10 @@ const BuildQuote = () => {
   );
 
   const isTron = selectedAsset?.network?.chainId?.startsWith('tron:') ?? false;
+  const isStellar =
+    selectedAsset?.network?.chainId?.startsWith('stellar:') ?? false;
+  // Chains whose Snap validates amounts and computes the max sendable amount.
+  const usesSnapAmountValidation = isTron || isStellar;
 
   useEffect(() => {
     if (intent && !intentHandled && Object.keys(intent || {}).length > 0) {
@@ -486,28 +491,29 @@ const BuildQuote = () => {
   ]);
 
   const {
-    isValidating: isTronValidating,
-    validationError: tronValidationError,
-    isDebouncing: isTronDebouncing,
-  } = useTronAmountValidation({
-    enabled: isSell && isTron && isOffRampNonEvmEnabled,
+    isValidating: isSnapValidating,
+    validationError: snapValidationError,
+    isDebouncing: isSnapDebouncing,
+  } = useSnapAmountValidation({
+    enabled: isSell && usesSnapAmountValidation && isOffRampNonEvmEnabled,
     amount,
     assetChainId: selectedAsset?.network?.chainId,
     assetReference: selectedAsset?.assetId,
+    assetSymbol: selectedAsset?.symbol,
     walletAddress: selectedAddress ?? undefined,
   });
 
-  const previousTronValidationError = useRef<string | undefined>(undefined);
+  const previousSnapValidationError = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     if (
-      tronValidationError &&
-      tronValidationError !== previousTronValidationError.current
+      snapValidationError &&
+      snapValidationError !== previousSnapValidationError.current
     ) {
-      AccessibilityInfo.announceForAccessibility(tronValidationError);
+      AccessibilityInfo.announceForAccessibility(snapValidationError);
     }
-    previousTronValidationError.current = tronValidationError;
-  }, [tronValidationError]);
+    previousSnapValidationError.current = snapValidationError;
+  }, [snapValidationError]);
 
   const displayBalance = useMemo(() => {
     if (!selectedAddress) {
@@ -654,7 +660,12 @@ const BuildQuote = () => {
 
         let amountToSet = amountPercentage;
 
-        if (value === 1 && isTron && isOffRampNonEvmEnabled && fromAccount) {
+        if (
+          value === 1 &&
+          usesSnapAmountValidation &&
+          isOffRampNonEvmEnabled &&
+          fromAccount
+        ) {
           const assetChainId = selectedAsset?.network?.chainId;
           const assetReference = selectedAsset?.assetId;
 
@@ -664,7 +675,10 @@ const BuildQuote = () => {
             maxRequestTokenRef.current = requestToken;
 
             try {
-              const maxResult = await getMaxSendableTronAmount(fromAccount, {
+              const getMaxSendableAmount = isTron
+                ? getMaxSendableTronAmount
+                : getMaxSendableStellarAmount;
+              const maxResult = await getMaxSendableAmount(fromAccount, {
                 accountId: fromAccount.id,
                 assetId: `${assetChainId}/${assetReference}` as CaipAssetType,
               });
@@ -709,6 +723,7 @@ const BuildQuote = () => {
       balanceBN,
       isBuy,
       isTron,
+      usesSnapAmountValidation,
       isOffRampNonEvmEnabled,
       fromAccount,
       maxSellAmount,
@@ -790,8 +805,8 @@ const BuildQuote = () => {
       return;
     }
 
-    // Prevent navigation if Tron validation is pending or failed
-    if (isTronValidating || isTronDebouncing || tronValidationError) {
+    // Prevent navigation if Snap amount validation is pending or failed
+    if (isSnapValidating || isSnapDebouncing || snapValidationError) {
       return;
     }
 
@@ -849,9 +864,9 @@ const BuildQuote = () => {
     selectedAsset,
     selectedPaymentMethodId,
     trackEvent,
-    isTronValidating,
-    isTronDebouncing,
-    tronValidationError,
+    isSnapValidating,
+    isSnapDebouncing,
+    snapValidationError,
   ]);
 
   const retryMethod = useCallback(() => {
@@ -1236,15 +1251,15 @@ const BuildQuote = () => {
                 </Text>
               </Row>
             )}
-            {tronValidationError && !hasInsufficientBalance && (
+            {snapValidationError && !hasInsufficientBalance && (
               <Row>
                 <Text
                   variant={TextVariant.BodySm}
                   color={TextColor.ErrorDefault}
-                  testID={BuildQuoteSelectors.TRON_VALIDATION_ERROR}
+                  testID={BuildQuoteSelectors.SNAP_VALIDATION_ERROR}
                   accessibilityRole="alert"
                 >
-                  {tronValidationError}
+                  {snapValidationError}
                 </Text>
               </Row>
             )}
@@ -1289,9 +1304,9 @@ const BuildQuote = () => {
               isDisabled={
                 amountNumber <= 0 ||
                 isFetching ||
-                isTronValidating ||
-                isTronDebouncing ||
-                Boolean(tronValidationError)
+                isSnapValidating ||
+                isSnapDebouncing ||
+                Boolean(snapValidationError)
               }
             >
               {strings('fiat_on_ramp_aggregator.get_quotes')}

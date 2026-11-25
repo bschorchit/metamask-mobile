@@ -3,14 +3,25 @@ import { renderHook, waitFor } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
 import configureMockStore from 'redux-mock-store';
 
-import { useTronAmountValidation } from './useTronAmountValidation';
+import { useSnapAmountValidation } from './useSnapAmountValidation';
 
 const mockValidateTronTransferAmount = jest.fn();
+const mockValidateStellarTransferAmount = jest.fn();
 
 jest.mock('../../../../../core/Multichain/tron', () => ({
   ...jest.requireActual('../../../../../core/Multichain/tron'),
   validateTronTransferAmount: (...args: unknown[]) =>
     mockValidateTronTransferAmount(...args),
+}));
+
+const mockGetMaxSendableStellarAmount = jest.fn();
+
+jest.mock('../../../../../core/Multichain/stellar', () => ({
+  ...jest.requireActual('../../../../../core/Multichain/stellar'),
+  getMaxSendableStellarAmount: (...args: unknown[]) =>
+    mockGetMaxSendableStellarAmount(...args),
+  validateStellarTransferAmount: (...args: unknown[]) =>
+    mockValidateStellarTransferAmount(...args),
 }));
 
 const mockStore = configureMockStore();
@@ -46,7 +57,7 @@ const createWrapper = (store: ReturnType<typeof mockStore>) => {
   return Wrapper;
 };
 
-describe('useTronAmountValidation', () => {
+describe('useSnapAmountValidation', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers();
@@ -61,7 +72,7 @@ describe('useTronAmountValidation', () => {
     const store = mockStore(mockState);
     const { result } = renderHook(
       () =>
-        useTronAmountValidation({
+        useSnapAmountValidation({
           enabled: false,
           amount: '10',
           assetChainId: 'tron:728126428',
@@ -85,7 +96,7 @@ describe('useTronAmountValidation', () => {
     const store = mockStore(mockState);
     const { result } = renderHook(
       () =>
-        useTronAmountValidation({
+        useSnapAmountValidation({
           enabled: true,
           amount: '0',
           assetChainId: 'tron:728126428',
@@ -114,7 +125,7 @@ describe('useTronAmountValidation', () => {
     const store = mockStore(mockState);
     const { result } = renderHook(
       () =>
-        useTronAmountValidation({
+        useSnapAmountValidation({
           enabled: true,
           amount: '10',
           assetChainId: 'tron:728126428',
@@ -149,7 +160,7 @@ describe('useTronAmountValidation', () => {
     const store = mockStore(mockState);
     const { result } = renderHook(
       () =>
-        useTronAmountValidation({
+        useSnapAmountValidation({
           enabled: true,
           amount: '100',
           assetChainId: 'tron:728126428',
@@ -176,7 +187,7 @@ describe('useTronAmountValidation', () => {
     const store = mockStore(mockState);
     const { result } = renderHook(
       () =>
-        useTronAmountValidation({
+        useSnapAmountValidation({
           enabled: true,
           amount: '100',
           assetChainId: 'tron:728126428',
@@ -202,7 +213,7 @@ describe('useTronAmountValidation', () => {
     const store = mockStore(mockState);
     const { result } = renderHook(
       () =>
-        useTronAmountValidation({
+        useSnapAmountValidation({
           enabled: true,
           amount: '10',
           assetChainId: 'tron:728126428',
@@ -228,7 +239,7 @@ describe('useTronAmountValidation', () => {
     const store = mockStore(mockState);
     const { result } = renderHook(
       () =>
-        useTronAmountValidation({
+        useSnapAmountValidation({
           enabled: true,
           amount: '10',
           assetChainId: 'tron:728126428',
@@ -257,7 +268,7 @@ describe('useTronAmountValidation', () => {
     const store = mockStore(mockState);
     const { result, rerender } = renderHook(
       ({ amount }: { amount: string }) =>
-        useTronAmountValidation({
+        useSnapAmountValidation({
           enabled: true,
           amount,
           assetChainId: 'tron:728126428',
@@ -296,7 +307,7 @@ describe('useTronAmountValidation', () => {
     const store = mockStore(mockState);
     const { result, rerender } = renderHook(
       ({ amount }: { amount: string }) =>
-        useTronAmountValidation({
+        useSnapAmountValidation({
           enabled: true,
           amount,
           assetChainId: 'tron:728126428',
@@ -329,7 +340,7 @@ describe('useTronAmountValidation', () => {
     const store = mockStore(mockState);
     const { result, rerender } = renderHook(
       ({ enabled }: { enabled: boolean }) =>
-        useTronAmountValidation({
+        useSnapAmountValidation({
           enabled,
           amount: '100',
           assetChainId: 'tron:728126428',
@@ -362,7 +373,7 @@ describe('useTronAmountValidation', () => {
     const store = mockStore(mockState);
     const { result } = renderHook(
       () =>
-        useTronAmountValidation({
+        useSnapAmountValidation({
           enabled: true,
           amount: '10',
           assetChainId: 'tron:728126428',
@@ -384,7 +395,7 @@ describe('useTronAmountValidation', () => {
     const store = mockStore(mockState);
     const { result } = renderHook(
       () =>
-        useTronAmountValidation({
+        useSnapAmountValidation({
           enabled: true,
           amount: '10',
           assetChainId: 'tron:728126428',
@@ -408,7 +419,7 @@ describe('useTronAmountValidation', () => {
     const store = mockStore(mockState);
     const { result } = renderHook(
       () =>
-        useTronAmountValidation({
+        useSnapAmountValidation({
           enabled: true,
           amount: '10',
           assetChainId: undefined,
@@ -432,7 +443,7 @@ describe('useTronAmountValidation', () => {
     const store = mockStore(mockState);
     const { result } = renderHook(
       () =>
-        useTronAmountValidation({
+        useSnapAmountValidation({
           enabled: true,
           amount: '10',
           assetChainId: 'tron:728126428',
@@ -469,7 +480,7 @@ describe('useTronAmountValidation', () => {
     const store = mockStore(mockState);
     const { result, rerender } = renderHook(
       ({ amount }: { amount: string }) =>
-        useTronAmountValidation({
+        useSnapAmountValidation({
           enabled: true,
           amount,
           assetChainId: 'tron:728126428',
@@ -521,7 +532,7 @@ describe('useTronAmountValidation', () => {
     const store = mockStore(mockState);
     const { result, rerender } = renderHook(
       ({ enabled }: { enabled: boolean }) =>
-        useTronAmountValidation({
+        useSnapAmountValidation({
           enabled,
           amount: '10',
           assetChainId: 'tron:728126428',
@@ -558,7 +569,7 @@ describe('useTronAmountValidation', () => {
     const store = mockStore(mockState);
     const { result } = renderHook(
       () =>
-        useTronAmountValidation({
+        useSnapAmountValidation({
           enabled: true,
           amount: '10',
           assetChainId: 'tron:728126428',
@@ -584,7 +595,7 @@ describe('useTronAmountValidation', () => {
     const store = mockStore(mockState);
     const { result, rerender } = renderHook(
       ({ walletAddress }: { walletAddress: string | undefined }) =>
-        useTronAmountValidation({
+        useSnapAmountValidation({
           enabled: true,
           amount: '10',
           assetChainId: 'tron:728126428',
@@ -616,6 +627,139 @@ describe('useTronAmountValidation', () => {
     requestResolve({
       valid: true,
       errors: [],
+    });
+  });
+  describe('Stellar', () => {
+    const stellarAccount = {
+      id: 'stellar-account-id',
+      address: 'GABCDEFGHIJKLMNOPQRSTUVWXYZ234567ABCDEFGHIJKLMNOPQRSTUVW',
+      metadata: { snap: { id: 'npm:@metamask/stellar-wallet-snap' } },
+    };
+    const stellarState = {
+      engine: {
+        backgroundState: {
+          ...mockState.engine.backgroundState,
+          AccountsController: {
+            internalAccounts: {
+              accounts: { [stellarAccount.id]: stellarAccount },
+              selectedAccount: stellarAccount.id,
+            },
+          },
+        },
+      },
+    };
+
+    const renderStellar = () =>
+      renderHook(
+        () =>
+          useSnapAmountValidation({
+            enabled: true,
+            amount: '100',
+            assetChainId: 'stellar:pubnet',
+            assetReference: 'slip44:148',
+            assetSymbol: 'XLM',
+            walletAddress: stellarAccount.address,
+          }),
+        { wrapper: createWrapper(mockStore(stellarState)) },
+      );
+
+    it('validates through the Stellar Snap, not the Tron one', async () => {
+      mockValidateStellarTransferAmount.mockResolvedValue({
+        valid: true,
+        errors: [],
+      });
+
+      const { result } = renderStellar();
+      jest.runAllTimers();
+
+      await waitFor(() => {
+        expect(mockValidateStellarTransferAmount).toHaveBeenCalledWith(
+          stellarAccount,
+          {
+            accountId: stellarAccount.id,
+            assetId: 'stellar:pubnet/slip44:148',
+            value: '100',
+          },
+        );
+        expect(result.current.isValidating).toBe(false);
+      });
+      expect(mockValidateTronTransferAmount).not.toHaveBeenCalled();
+      expect(result.current.validationError).toBeUndefined();
+    });
+
+    describe('InsufficientBalance', () => {
+      beforeEach(() => {
+        mockValidateStellarTransferAmount.mockResolvedValue({
+          valid: false,
+          errors: [{ code: 'InsufficientBalance' }],
+        });
+      });
+
+      it('shows the max sendable amount from the Snap', async () => {
+        mockGetMaxSendableStellarAmount.mockResolvedValue({
+          amount: '188.0453466',
+        });
+
+        const { result } = renderStellar();
+        jest.runAllTimers();
+
+        await waitFor(() => {
+          expect(result.current.validationError).toBe(
+            'Insufficient funds. You can send up to 188.0453466 XLM.',
+          );
+        });
+        expect(mockGetMaxSendableStellarAmount).toHaveBeenCalledWith(
+          stellarAccount,
+          {
+            accountId: stellarAccount.id,
+            assetId: 'stellar:pubnet/slip44:148',
+          },
+        );
+      });
+
+      it.each([
+        [
+          'returns 0',
+          () =>
+            mockGetMaxSendableStellarAmount.mockResolvedValue({ amount: '0' }),
+        ],
+        [
+          'returns nothing',
+          () => mockGetMaxSendableStellarAmount.mockResolvedValue(undefined),
+        ],
+        [
+          'throws',
+          () =>
+            mockGetMaxSendableStellarAmount.mockRejectedValue(
+              new Error('boom'),
+            ),
+        ],
+      ])('falls back to plain message when max %s', async (_label, setup) => {
+        setup();
+
+        const { result } = renderStellar();
+        jest.runAllTimers();
+
+        await waitFor(() => {
+          expect(result.current.validationError).toBe('Insufficient funds');
+        });
+      });
+    });
+
+    it('shows the generic fee message (not the Tron one) on InsufficientBalanceToCoverFee', async () => {
+      mockValidateStellarTransferAmount.mockResolvedValue({
+        valid: false,
+        errors: [{ code: 'InsufficientBalanceToCoverFee' }],
+      });
+
+      const { result } = renderStellar();
+      jest.runAllTimers();
+
+      await waitFor(() => {
+        expect(result.current.validationError).toBe(
+          'Insufficient balance to cover fees',
+        );
+      });
     });
   });
 });

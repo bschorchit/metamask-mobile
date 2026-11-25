@@ -1,24 +1,14 @@
-import { HandlerType } from '@metamask/snaps-utils';
 import { InternalAccount } from '@metamask/keyring-internal-api';
-import { SnapId, CaipAssetType } from '@metamask/snaps-sdk';
+import { CaipAssetType } from '@metamask/snaps-sdk';
 
-import Engine from '../Engine';
-import { handleSnapRequest } from '../Snaps/utils';
+import {
+  getMaxSendableSnapAmount,
+  validateSnapTransferAmount,
+  type SnapAmountValidationResult,
+  type SnapMaxSendableAmountResult,
+} from './snapSendValidation';
 
-/**
- * Result returned by the Tron Snap `onAmountInput` client request.
- */
-export interface SnapAmountValidationResult {
-  valid: boolean;
-  errors?: { code: string }[];
-}
-
-/**
- * Result returned by the Tron Snap `getMaxSendableAmount` client request.
- */
-export interface SnapMaxSendableAmountResult {
-  amount: string;
-}
+export type { SnapAmountValidationResult, SnapMaxSendableAmountResult };
 
 /**
  * Asks the account's Tron Snap to validate a transfer before it is sent.
@@ -49,15 +39,7 @@ export async function validateTronTransferAmount(
     toAddress?: string;
   },
 ): Promise<SnapAmountValidationResult | undefined> {
-  return (await handleSnapRequest(Engine.controllerMessenger, {
-    snapId: fromAccount.metadata?.snap?.id as SnapId,
-    origin: 'metamask',
-    handler: HandlerType.OnClientRequest,
-    request: {
-      method: 'onAmountInput',
-      params,
-    },
-  })) as SnapAmountValidationResult | undefined;
+  return validateSnapTransferAmount(fromAccount, params);
 }
 
 /**
@@ -82,13 +64,5 @@ export async function getMaxSendableTronAmount(
     toAddress?: string;
   },
 ): Promise<SnapMaxSendableAmountResult | undefined> {
-  return (await handleSnapRequest(Engine.controllerMessenger, {
-    snapId: fromAccount.metadata?.snap?.id as SnapId,
-    origin: 'metamask',
-    handler: HandlerType.OnClientRequest,
-    request: {
-      method: 'getMaxSendableAmount',
-      params,
-    },
-  })) as SnapMaxSendableAmountResult | undefined;
+  return getMaxSendableSnapAmount(fromAccount, params);
 }
