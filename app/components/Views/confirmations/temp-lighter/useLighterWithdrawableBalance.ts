@@ -4,21 +4,23 @@ import Logger from '../../../../util/Logger';
 import { fetchLighterWithdrawableBalance } from './lighter-balance';
 
 /**
- * @param enabled - Whether a Lighter withdraw is open. Nothing is fetched otherwise.
+ * @param address - EVM address of the logged-in user.
+ * @param enabled - Whether the balance is needed. Nothing is fetched otherwise.
  * @returns Human-readable USDC balance, or `undefined` until loaded.
  */
 export function useLighterWithdrawableBalance(
+  address: string | undefined,
   enabled: boolean,
 ): string | undefined {
   const [balance, setBalance] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    if (!enabled) {
+    if (!enabled || !address) {
       return undefined;
     }
 
     let cancelled = false;
-    fetchLighterWithdrawableBalance()
+    fetchLighterWithdrawableBalance(address)
       .then((fetched) => {
         if (!cancelled) {
           setBalance(fetched);
@@ -31,7 +33,7 @@ export function useLighterWithdrawableBalance(
     return () => {
       cancelled = true;
     };
-  }, [enabled]);
+  }, [address, enabled]);
 
   return balance;
 }
