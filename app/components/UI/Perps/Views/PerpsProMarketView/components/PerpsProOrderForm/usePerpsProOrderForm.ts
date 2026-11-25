@@ -3364,8 +3364,7 @@ export const usePerpsProOrderForm = ({
           accountSupport !== 'supported' ||
           executionStateRef.current !== expectedExecutionState ||
           liveBlockersRef.current !== expectedBlockers ||
-          liveBlockersRef.current !== expectedBlockers ||
-        !isCurrentSubmission() ||
+          !isCurrentSubmission() ||
           selectedAddressRef.current !== expectedSelectedAddress ||
           networkRef.current !== expectedNetwork
         ) {
@@ -3680,6 +3679,7 @@ export const usePerpsProOrderForm = ({
       if (
         accountSupport !== 'supported' ||
         executionStateRef.current !== expectedExecutionState ||
+        liveBlockersRef.current !== expectedBlockers ||
         !isCurrentSubmission() ||
         selectedAddressRef.current !== expectedSelectedAddress ||
         networkRef.current !== expectedNetwork
