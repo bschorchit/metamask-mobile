@@ -139,6 +139,12 @@
     "deposit_limit": {
       "title": "最大存款金额：{{amount}}"
     },
+    "lighter_account_lookup_pending": {
+      "message": "Verifying Lighter account..."
+    },
+    "lighter_account_lookup_failed": {
+      "message": "Failed to verify Lighter account"
+    },
     "headless_buy_error": {
       "title": "法币购买失败",
       "message": "您的法币购买出错了。请重试。"
@@ -1215,7 +1221,8 @@
       "bic_label": "BIC",
       "payment_reference_label": "Payment reference",
       "copy_label": "复制 {{field}}",
-      "copied_label": "已复制 {{field}}",
+      "copied_label": "{{field}} copied",
+      "share_details_button": "Share details",
       "button": "完成",
       "waiting_for_details": "您的账户详情将很快显示在这里。",
       "loading_details": "正在加载账户详情",
@@ -1552,7 +1559,7 @@
       "private_description": "如果您将个人资料设为私密，就无法发布帖子。将其设为公开后即可开始发帖。"
     },
     "post_trade_share": {
-      "swap_in_progress": "兑换进行中",
+      "trade_in_progress": "Trade in progress",
       "complete": "兑换完成",
       "failed": "交换失败",
       "order_in_progress": "订单进行中",
@@ -2980,9 +2987,10 @@
       "minimumDeposit": "最低存款金额为 {{amount}} USDC",
       "tokenNotSupported": "代币 {{token}} 不支持用于存款",
       "unsupportedCollateral": "该市场的抵押品不受支持",
-      "unknownError": "发生未知错误",
+      "unknownError": "Something went wrong. Please try again.",
       "position_not_found": "未找到仓位",
       "order_not_found": "未找到订单",
+      "marketNotFound": "Market not found",
       "clientNotInitialized": "HyperLiquid SDK 客户端未正确初始化",
       "exchangeClientNotAvailable": "初始化后 ExchangeClient 不可用",
       "exchangeAccountNotFound": "请先向您的账户充值，再下达订单",
@@ -3047,6 +3055,8 @@
         "scaleCountInvalid": "分段委托数量无效",
         "scaleSizeTooSmall": "每个分段委托低于最小订单数量",
         "scalePreviewStale": "Scale order details changed. Review the updated preview and try again.",
+        "scaleSizeConservationFailed": "We couldn't place your scale order. Try again.",
+        "scaleExposureExceedsIntent": "We couldn't place your scale order. Try again.",
         "scaleNotionalTooSmall": "每个分段委托低于交易所最小订单价值",
         "chaseIntervalInvalid": "追踪间隔无效",
         "chaseDurationInvalid": "追踪时长无效",
@@ -3066,7 +3076,7 @@
       "marketsFailed": "获取市场失败",
       "bridgeContractNotFound": "无法获取 HyperLiquid 跨链桥合约地址",
       "providerNotAvailable": "提供商 {{providerId}} 不可用",
-      "providerRouteRequired": "Choose a provider for this order and try again.",
+      "providerRouteRequired": "No exchange selected. Select one and try again.",
       "withdrawFailed": "提款失败",
       "connectionRequired": "usePerpsConnection 必须在 PerpsConnectionProvider 内使用",
       "assetMappingFailed": "构建资产映射失败",
@@ -3083,6 +3093,10 @@
       "priceUnavailable": "价格数据无法获取。请刷新后重试。",
       "batchCancelFailed": "部分订单无法取消。请重试。",
       "batchCloseFailed": "部分仓位无法平仓。请重试。",
+      "batchIncomplete": "Some orders or positions couldn't be updated. Try again.",
+      "ordersFailed": "We couldn't load your orders. Try again.",
+      "orderNoLongerOpen": "This order is no longer open. It may have already been filled or cancelled.",
+      "liquidationPriceUnavailable": "Liquidation price is unavailable. Try again.",
       "insufficientMargin": "保证金不足，无法执行此交易。请考虑追加资金或减仓。",
       "reduceOnlyViolation": "此订单将增加您的持仓。仅允许只减仓订单。",
       "positionWouldFlip": "此订单将翻转您的仓位走向。请先平仓现有仓位。",
@@ -3645,7 +3659,9 @@
     "exchange_filter": {
       "title": "Filter by exchange",
       "tagline_lighter": "Low fee, high leverage",
-      "tagline_hyperliquid": "High volume, low slippage"
+      "tagline_hyperliquid": "High volume, low slippage",
+      "trigger": "{{count}} exchange",
+      "trigger_plural": "{{count}} exchanges"
     },
     "market_type": {
       "filter_by": "筛选方式"
@@ -3940,11 +3956,45 @@
       "politics": "政治",
       "sports": "体育"
     },
+    "feed_screens": {
+      "titles": {
+        "sports-football-nfl": "Sports",
+        "sports-football-ncaa": "Sports",
+        "sports": "Sports",
+        "politics": "Politics"
+      },
+      "subtitles": {
+        "sports-football-nfl": "NFL",
+        "sports-football-ncaa": "NCAAF"
+      },
+      "tabs": {
+        "sports-football-nfl": {
+          "games": "Games",
+          "props": "Props"
+        },
+        "sports-football-ncaa": {
+          "games": "Games",
+          "props": "Props"
+        },
+        "sports": {
+          "nfl": "NFL",
+          "ncaaf": "NCAAF"
+        },
+        "politics": {
+          "trump": "Trump",
+          "congress": "Congress",
+          "iran": "Iran"
+        }
+      }
+    },
     "home_feed": {
       "trending": "趋势",
       "sports": "体育",
       "games_error": "无法加载游戏。",
-      "retry": "重试"
+      "retry": "重试",
+      "preview_error": "Markets couldn’t be loaded.",
+      "preview_empty": "No markets available.",
+      "open_section": "View {{title}}"
     },
     "get_started_banner": {
       "title": "只需几步即可开始",
@@ -4131,6 +4181,56 @@
     "order_notification": {
       "not_placed_title": "订单未下达",
       "not_placed_description": "您的余额未发生任何变动。请获取最新报价后重试。"
+    },
+    "deposit": {
+      "title": "Add Prediction funds",
+      "amount": "Deposit amount",
+      "pay_with": "Pay with",
+      "token_on_network": "{{token}} on {{network}}",
+      "available": "{{amount}} USDC available",
+      "balance_unavailable": "USDC balance unavailable",
+      "simulated_sandbox": "Simulated deposit (sandbox)",
+      "unavailable": "Deposits aren't available right now.",
+      "unavailable_error": "Deposits aren't available right now. Try again in a moment.",
+      "retry": "Retry",
+      "minimum": "Minimum $1",
+      "not_enough_usdc": "Not enough USDC on {{network}}",
+      "continue": "Continue",
+      "add_funds": "Add funds",
+      "plan_mismatch": "This deposit couldn't be verified, so nothing was sent. Try again.",
+      "rejected": "Transfer cancelled. No funds were moved.",
+      "failed": "Something went wrong. Your account wasn't funded.",
+      "transfer_mismatch": "The transfer doesn't match this deposit. Contact support.",
+      "processing_title": "Adding funds",
+      "processing_description": "{{amount}} will be available in about a minute.",
+      "done": "Done",
+      "in_progress": {
+        "title": "Deposit in progress",
+        "awaiting_transfer": "Your deposit of {{amount}} is waiting for its transfer.",
+        "processing": "Your deposit of {{amount}} is on its way. It'll be available in a moment.",
+        "under_review": "Your deposit of {{amount}} is under review. Support reference: {{reference}}",
+        "under_review_label": "Your deposit of {{amount}} is under review. Support reference:",
+        "unknown": "A deposit is already in progress. Try again in a moment.",
+        "checking_availability": "Checking deposit availability...",
+        "continue": "Continue",
+        "cancel": "Cancel deposit",
+        "close": "Got it",
+        "cancel_failed": "This deposit couldn't be cancelled. Try again."
+      },
+      "status": {
+        "awaiting_transfer": "Deposit waiting for your transfer",
+        "processing": "Deposit processing",
+        "under_review": "Deposit under review · Ref {{reference}}",
+        "under_review_label": "Deposit under review · Ref",
+        "copy_reference": "Copy support reference",
+        "reference_copied": "Support reference copied",
+        "failed": "Deposit failed",
+        "cancelled": "Deposit cancelled"
+      },
+      "notification": {
+        "completed_title": "Deposit complete",
+        "completed_description": "{{amount}} is ready to trade."
+      }
     },
     "withdraw": {
       "title": "提取",
@@ -4343,6 +4443,10 @@
       "claim": "领取"
     },
     "crypto_up_down": {
+      "market_break": {
+        "reopens_at": "Market is on a break. Live chart resumes at {{time}}.",
+        "closed": "Market is closed. Live chart resumes when trading reopens."
+      },
       "twap_info": {
         "title": "此市场的结算方式",
         "accessibility_label": "了解此市场的结算方式",
@@ -5359,6 +5463,24 @@
     "fully_diluted": "已充分稀释",
     "unknown": "未知",
     "stock": "股票"
+  },
+  "collectibles": {
+    "title": "Collectibles",
+    "trade_menu": {
+      "description": "Explore packs and cards"
+    },
+    "home": {
+      "empty": "No packs available",
+      "empty_description": "Check back soon or browse other packs.",
+      "opens": {
+        "one": "{{formattedCount}} open",
+        "other": "{{formattedCount}} opens"
+      },
+      "opens_trending": {
+        "one": "{{formattedCount}} open, trending",
+        "other": "{{formattedCount}} opens, trending"
+      }
+    }
   },
   "collectible": {
     "collectible_address": "地址",
@@ -9861,7 +9983,6 @@
     "apy_premium_tag": "Premium",
     "apy_upgrading_pill": "Upgrading to Premium APY",
     "apy_downgrading_pill": "Moving to standard APY",
-    "apy_info_label": "年收益率信息",
     "balance_unavailable": "余额不可用",
     "balance_unavailable_value": "$—",
     "balance_unavailable_banner_description": "我们暂时无法显示您的余额。您的资金安全无虞，请稍后重试。",
@@ -9886,6 +10007,7 @@
           "title": "关联您的 MetaMask 卡",
           "description": "在任何受理万事达卡的地方，使用您的余额消费，同时赚取收益。",
           "cta_primary": "关联卡",
+          "cta_log_in": "Log in",
           "cta_secondary": "跳过"
         }
       }
@@ -9894,18 +10016,18 @@
       "eyebrow": "MetaMask Money",
       "title": "用同一笔余额赚取收益、进行交易和消费",
       "body_prefix": "MetaMask Money 是一个稳定币账户，收益率最高可达 ",
-      "body_suffix": "，还支持交易、转账和消费。",
+      "body_suffix": "- with trading, sending, and spending built in.",
       "body_no_apy": "MetaMask Money 是一个集交易、转账和消费功能于一体的稳定币账户。",
       "benefit_convert_title": "可按 1:1 兑换为 MetaMask USD",
-      "benefit_convert_body": "您存入的资金将免手续费按 1:1 兑换为 MetaMask USD。",
+      "benefit_convert_body": "Funds you add convert 1:1 to MetaMask USD, a dollar-backed stablecoin.",
       "benefit_earn_title": "自动赚取收益",
       "benefit_earn_body": "收益实时入账，无需手动领取。",
       "benefit_trade_title": "用同一笔余额进行交易",
       "benefit_trade_body": "直接使用 Money 余额进行兑换、永续合约交易和预测市场交易。",
-      "benefit_withdraw_title": "随时取出资金",
-      "benefit_withdraw_body": "无锁定期、无需提前通知，也不收取罚金。资金始终归您所有，可随时取出。",
+      "benefit_withdraw_title": "No lockups",
+      "benefit_withdraw_body": "There are no notice periods or penalties to swap or send your funds.",
       "benefit_send_title": "随处转账或消费",
-      "benefit_send_body": "可转至任意钱包或银行账户，也可使用 MetaMask 卡消费。",
+      "benefit_send_body": "Send to any wallet or bank, or spend globally with MetaMask Card.",
       "cta": "开始赚取",
       "close": "关闭"
     },
@@ -9966,6 +10088,7 @@
     },
     "action": {
       "add": "添加",
+      "move": "Move",
       "card": "卡",
       "details": "详情"
     },
@@ -9987,6 +10110,26 @@
     },
     "earnings": {
       "title": "收益",
+      "tab_earnings": "Earnings",
+      "tab_apy": "APY",
+      "tab_allocation": "Allocation",
+      "range_1w": "1W",
+      "range_1m": "1M",
+      "range_3m": "3M",
+      "range_6m": "6M",
+      "range_1y": "All",
+      "total_earned": "Total earned",
+      "last_30_days": "Last 30 days",
+      "lifetime": "Lifetime",
+      "projected_in_1_year": "Projected in 1 year",
+      "projection_disclaimer": "Based on current balance and APY",
+      "payouts_disclaimer": "Interest payouts are accrued daily and paid in MetaMask USD",
+      "chart_bucket_accessibility_label": "{{date}}, {{amount}}",
+      "chart_bucket_unavailable_accessibility_label": "{{date}}, unavailable",
+      "earn_more": "Earn more",
+      "error": "We couldn't load earnings. Try again.",
+      "retry": "Retry",
+      "empty": "No earnings history yet.",
       "estimated_monthly": "每月",
       "estimated_lifetime": "累计",
       "monthly_info_label": "月度收益信息",
@@ -10032,6 +10175,8 @@
       "virtual_card": "虚拟卡",
       "metal_card": "金属卡",
       "link_title": "关联卡",
+      "sign_in_cta": "Log in",
+      "sign_in_prompt": "Log in to view your balance, card, and transaction details.",
       "link_subtitle": "在任何受理万事达卡的地方，使用您的余额消费，同时赚取收益。",
       "link_subtitle_no_apy": "在任何受理万事达卡的地方，使用您的余额消费，同时赚取收益。",
       "link_bullet_apy": "最高可赚取约 {{apy}}% APY",
@@ -10087,6 +10232,8 @@
       "contact_support": "联系支持团队"
     },
     "transfer_sheet": {
+      "move_title": "Move funds",
+      "withdraw_to_accounts": "Withdraw to accounts",
       "perps_account": "永续合约（Perps）账户",
       "predictions_account": "预测（Predictions）账户",
       "send_external": "外部地址",
@@ -10151,15 +10298,32 @@
       "send_destination_predict": "预测"
     },
     "apy_tooltip": {
-      "title": "年化收益率（APY）",
+      "subtitle": "Annual Percentage Yield",
+      "lead": "This is the rate your MetaMask Money balance is earning right now.",
       "paragraph_1": "您的 Money Account 可自动赚取最高 {{percentage}}% 的收益。",
-      "paragraph_1_premium": "Your Money account earns up to {{percentage}}% with MetaMask Pro Premium APY.",
+      "paragraph_1_premium": "Your Money account earns up to {{percentage}}% with MetaMask Orange Premium APY.",
       "migration_upgrading": "Your funds are moving to the Premium vault. The APY shown is for the vault your funds are in right now.",
       "migration_downgrading": "Your funds are moving to the standard vault. The APY shown is for the vault your funds are in right now.",
-      "paragraph_2": "所示收益率为基于当前市场状况的预估年化收益率（APY）。APY 会浮动变化，不作保证。资金将存入一个去中心化金融金库，该金库由 Veda 管理并由 Steakhouse Financial 进行风险监督，通过在成熟的借贷市场中运作来产生收益。",
+      "how_it_works_title": "How it works",
+      "how_it_works_body": "Earnings are added to your balance in real time and compound, so your earnings earn too.",
+      "why_it_changes_title": "Why it changes",
+      "why_it_changes_body": "APY is variable and isn't guaranteed. It moves up and down with borrowing demand.",
+      "where_it_comes_from_title": "Where it comes from",
+      "where_it_comes_from_body": "Your funds go into a DeFi vault that lends across established markets. Veda manages the vault, and Steakhouse Financial oversees its risk.",
       "paragraph_3": "当您关联 MetaMask Card 后，消费金额将从此余额中扣除。",
-      "paragraph_4": "Money Account 由 Monad 提供支持。",
-      "deposit_body": "显示的利率是根据当前市场行情估算的年化收益率 (APY) 。 APY 会随市场波动，并非固定保证。"
+      "paragraph_4": "Money Account 由 Monad 提供支持。"
+    },
+    "estimated_balance_sheet": {
+      "title": "Your {{depositAmount}} could grow to {{projectedAmount}}",
+      "subtitle_prefix": "Estimated balance after one year in MetaMask Money at ",
+      "subtitle_apy": "{{percentage}}% APY",
+      "subtitle_suffix": ".",
+      "subtitle_no_apy": "Estimated balance after one year in MetaMask Money.",
+      "bullet_compound_title": "Earnings compound automatically",
+      "bullet_compound_body": "Earnings are added to your balance in real time, so they start earning too.",
+      "bullet_no_lockups_title": "No lockups",
+      "bullet_no_lockups_body": "There are no notice periods or penalties to swap or send your funds.",
+      "disclaimer": "This estimate assumes {{percentage}}% APY for a full year. APY is variable and isn't guaranteed."
     },
     "earnings_tooltip": {
       "monthly": {
@@ -10173,7 +10337,6 @@
     },
     "earn_crypto_info_sheet": {
       "title": "用您的加密货币赚取收益",
-      "deposit_title": "预计 1 年后余额",
       "body": "此预测假设 {{percentage}}% 的年化收益率在一年内保持不变。年化收益率会浮动，不作保证。收益不作保证。",
       "go_to_money_account": "前往 Money Account"
     },
@@ -10643,6 +10806,7 @@
       "now": "立即",
       "switching_to": "正切换至",
       "bridge_estimated_time": "预计时间",
+      "convert": "Convert",
       "pay_with": "支付方式：",
       "payment_method": "支付方式",
       "receive_as": "接收",
@@ -10815,8 +10979,36 @@
       "buy_button": "购买加密货币",
       "buy_predict": "为钱包充值以使用预测服务。",
       "buy_perps": "为钱包充值以使用永续合约。",
-      "projected_balance": "预计 {{projectedYears}} 年余额：",
+      "projected_balance": "Est. {{projectedYears}}-year balance:",
       "earn_up_to_apy": "赚取{{percentage}}% APY"
+    },
+    "money_deposit": {
+      "to_metamask_money": "MetaMask Money",
+      "to_separator": " • ",
+      "apy_label": "{{percentage}}% APY",
+      "less_than_one_min": "Less than 1 min",
+      "apy_info_sheet": {
+        "subtitle": "Annual Percentage Yield",
+        "lead": "This is the rate your MetaMask Money balance is earning right now.",
+        "how_it_works_title": "How it works",
+        "how_it_works_body": "Earnings are added to your balance in real time and compound, so your earnings earn too.",
+        "why_it_changes_title": "Why it changes",
+        "why_it_changes_body": "APY is variable and isn't guaranteed. It moves up and down with borrowing demand.",
+        "where_it_comes_from_title": "Where it comes from",
+        "where_it_comes_from_body": "Your funds go into a DeFi vault that lends across established markets. Veda manages the vault, and Steakhouse Financial oversees its risk."
+      },
+      "musd_info_sheet": {
+        "title": "You'll receive {{amount}} of MetaMask USD",
+        "lead": "MetaMask USD (mUSD) is a dollar stablecoin.",
+        "bullet_worth_title": "Always worth $1",
+        "bullet_worth_body": "It's backed 1:1 by short-term US Treasury bills and cash.",
+        "bullet_backed_title": "Backed by names you know",
+        "bullet_backed_body": "BlackRock manages the reserves and JPMorgan Chase holds them. mUSD is issued by Bridge, a Stripe company.",
+        "bullet_earns_title_prefix": "Earns up to ",
+        "bullet_earns_body": "It starts earning automatically in your MetaMask Money account.",
+        "bullet_no_lockups_title": "No lockups",
+        "bullet_no_lockups_body": "There are no notice periods or penalties to swap or send your funds."
+      }
     },
     "unlimited": "无限制",
     "all": "所有",
@@ -10893,6 +11085,7 @@
       "try_again": "请重试",
       "today": "今天"
     },
+    "money_name": "MetaMask USD",
     "limit": {
       "pair": "{{source}} → {{dest}}",
       "expiry": "Expires after: {{timeLeft}}",
@@ -11001,7 +11194,7 @@
       "est_receiving_per_order": "预计收到（每笔订单）",
       "est_receiving_all_orders": "预计收到（所有订单）",
       "expires_after": "过期时间",
-      "slippage_all_orders": "滑移（所有订单）",
+      "default_price_tolerance_description": "Your recurring order won't go through if we can't execute within {{costTolerance}}% of the displayed output amount.",
       "est_network_fee_per_order": "预估网络费用（每笔订单）",
       "account_upgrade_fee": "账户升级费",
       "account_upgrade_fee_info_title": "账户升级费",
@@ -11086,6 +11279,7 @@
       "failed": "失败",
       "filled": "已成交",
       "skipped": "已跳过",
+      "swap_issue_warning": "Some swaps were skipped or failed",
       "reason": "原因",
       "swap_details_title": "已将 {{source}} 兑换为 {{dest}}",
       "order_not_found": "未找到订单",
@@ -11150,6 +11344,7 @@
     "slippage": "滑点",
     "slippage_info": "如果价格在您下单和确认之间发生变化，称为“滑点”。如果滑点超过您在此设置的最大幅度，您的兑换将自动取消。",
     "network_fee": "网络费",
+    "stablecoin_account": "Stablecoin account",
     "relayer_fee": "中继费",
     "gas_fees_sponsored": "由 MetaMask 支付",
     "included": "已包含",
@@ -11198,6 +11393,7 @@
     "no_fees_with_orange": "No fees with Orange",
     "fee_disclaimer": "包含 {{feePercentage}}% MetaMask 费用",
     "discount_badge_promo": "促销",
+    "discount_badge_free": "Free",
     "discount_badge_dao": "DAO",
     "no_mm_fee": "无 MM 费用",
     "token_suspicious": "可疑",
@@ -11420,6 +11616,21 @@
     "ios_google_login_unsupported_blocking_rehydration_description_2": "将您的 iPhone 更新至 iOS 17.4 或更高版本，以继续使用 Google 登录。",
     "ios_google_login_unsupported_blocking_rehydration_description_3": "无法更新？您仍可通过以下方式访问钱包：在其他设备上使用同一 Google 账户和密码登录，或通过私钥助记词导入钱包。",
     "ios_google_login_unsupported_blocking_rehydration_button": "关闭"
+  },
+  "wallet_recovery_mfa": {
+    "verify_title": "Verify it's you",
+    "verify_description": "Choose a security method to recover your wallet.",
+    "use_passkey": "Use passkey",
+    "or": "or",
+    "method_password": "Password",
+    "method_email": "Email",
+    "method_totp": "Authenticator app",
+    "method_failed": "Verification failed. Try again or choose another method.",
+    "offline_reason": "Connect to the internet to use these methods.",
+    "cant_use_these": "Can't use any of these?",
+    "password_description": "Enter your password to continue",
+    "show_password": "Show password",
+    "hide_password": "Hide password"
   },
   "password_hint": {
     "title": "密码提示",
@@ -12932,6 +13143,9 @@
       "title_claim": "领取福利",
       "action": "领取",
       "empty-list": "您当前暂无任何福利。",
+      "error_title": "Unable to load benefits",
+      "error_description": "We couldn't load your benefits. Try again.",
+      "retry_button": "Retry",
       "powered_by": "技术支持：",
       "available_count": "{{count}} 可用"
     },
@@ -12954,6 +13168,8 @@
     "campaign": {
       "starts_date": "开始于 {{date}}",
       "ends_date": "结束于 {{date}}",
+      "live_until_date": "Live until {{date}}",
+      "join_campaign": "Join the {{campaignName}}",
       "ended_date": "结束时间：{{date}}",
       "pill_up_next": "即将推出",
       "up_next": "即将到来",
@@ -12964,6 +13180,9 @@
       "entered": "已参加",
       "participant_count": "#{{count}}",
       "opt_in_cta": "选择加入",
+      "opt_in_section_title": "Discover campaigns and benefits",
+      "opt_in_section_description": "Win prizes, claim perks, and discover more ways to earn!",
+      "opt_in_section_legal": "Turning this on will opt-in all accounts on your devices to Rewards campaigns and Benefits powered by theMiracle.",
       "create_username": "Create a username",
       "opt_in_sheet_title": "加入活动",
       "geo_restriction_banner_title": "您所在区域不可用",
@@ -13845,6 +14064,7 @@
       "money_account": "Money Account",
       "renews_on": "续订日期",
       "ends_on": "Ends on",
+      "ended_on": "Ended on",
       "months_on_us_one": "赠送您 {{count}} 个月",
       "months_on_us_other": "赠送您 {{count}} 个月",
       "manage": "管理计划",
