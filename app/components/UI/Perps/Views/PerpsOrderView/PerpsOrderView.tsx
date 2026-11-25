@@ -604,6 +604,8 @@ const PerpsOrderViewContentBase: React.FC<PerpsOrderViewContentProps> = ({
     isAccountUnsupportedModalVisible,
     checkAccountSupport,
     closeAccountUnsupportedModal,
+    supportContextKey,
+    unsupportedContextKey,
   } = usePerpsAccountSupport();
   const { account, isInitialLoading: isLoadingAccount } = usePerpsLiveAccount();
 
@@ -2261,8 +2263,11 @@ const PerpsOrderViewContentBase: React.FC<PerpsOrderViewContentProps> = ({
 
   /** Returns true when an existing cross-margin position blocks the order. */
   const blockCrossMarginOrder = useCallback((): boolean => {
-    // MetaMask only supports isolated margin
-    if (currentMarketPosition?.leverage?.type !== 'cross') {
+    // While cross margin is off, an existing cross position cannot be traded.
+    if (
+      isCrossMarginEnabled ||
+      currentMarketPosition?.leverage?.type !== 'cross'
+    ) {
       return false;
     }
     navigation.navigate(Routes.PERPS.MODALS.ROOT, {
@@ -2278,7 +2283,7 @@ const PerpsOrderViewContentBase: React.FC<PerpsOrderViewContentProps> = ({
       [PERPS_EVENT_PROPERTY.SCREEN_TYPE]: PERPS_EVENT_VALUE.SCREEN_TYPE.TRADING,
     });
     return true;
-  }, [currentMarketPosition, navigation, track]);
+  }, [isCrossMarginEnabled, currentMarketPosition, navigation, track]);
 
   // A Social V1 copy-trade that can return an order id shows the share sheet
   // instead of the submitted toast.
@@ -2685,7 +2690,6 @@ const PerpsOrderViewContentBase: React.FC<PerpsOrderViewContentProps> = ({
       trackPlaceOrderTap,
       checkAccountSupportBeforeSubmit,
       submitCheckedOrder,
-
     ],
   );
   // Layout effect: a tap can never run before the committed callback is stored.
@@ -3181,6 +3185,15 @@ const PerpsOrderViewContentBase: React.FC<PerpsOrderViewContentProps> = ({
           rootScreen="trade"
           screenDepth={TRADE_SHEET_SCREEN_DEPTH}
           contentSizedScreens={TRADE_SHEET_CONTENT_SIZED_SCREENS}
+          popToRootOnChange={
+            // The nested unsupported explanation is bound to the context it
+            // was shown for: an account/provider/network switch pops the
+            // sheet back to the root at once, while the next support read is
+            // still pending.
+            unsupportedContextKey !== supportContextKey
+              ? supportContextKey
+              : undefined
+          }
           screens={{
             trade: (
               <PerpsTradeScreen

@@ -798,7 +798,11 @@ export function renderPerpsView(
         />
       </Tab.Navigator>
     );
-    return withStreamControls(renderWithProvider(tabTree, { state }), stream);
+    return withStreamControls(
+      renderWithProvider(tabTree, { state }),
+      stream,
+      queryClient,
+    );
   }
 
   if (extraRoutes?.length || presentingRoute) {
